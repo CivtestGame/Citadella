@@ -134,12 +134,3 @@ function ct.register_reinforcement(pos, ctgroup_id, item_name, resource_limit)
       }
    end
 end
-
-
-local civmisc = minetest.get_modpath("civmisc")
-if civmisc then
-   cleanup.register_cleanup_action("CITADEL CACHE FLUSH", function()
-         ct.force_flush_cache()
-         return true
-   end)
-end

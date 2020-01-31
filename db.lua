@@ -38,6 +38,7 @@ prep_db()
 
 
 minetest.register_on_shutdown(function()
+   ct.force_flush_cache()
    db:close()
    env:close()
 end)
