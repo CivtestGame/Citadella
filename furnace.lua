@@ -290,7 +290,7 @@ minetest.register_node("citadella:furnace", {
 
 	on_construct = function(pos)
 		local meta = minetest.get_meta(pos)
-		meta:set_string("formspec", default.get_furnace_inactive_formspec())
+		meta:set_string("formspec", get_furnace_inactive_formspec())
                 meta:set_string("owner", "")
 		local inv = meta:get_inventory()
 		inv:set_size('src', 1)
