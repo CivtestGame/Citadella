@@ -33,6 +33,22 @@ function ct.position_in_citadella_border(pos)
    return vector.distance(pos_no_y, zerozero) < citadella_border_radius
 end
 
+-- Item/node reinforcement blacklisting
+
+function ct.blacklisted_node(name)
+   local def = core.registered_nodes[name]
+   minetest.log("node: "..name..": " .. dump(def.groups))
+   local is_blacklisted = false
+   if def and def.groups then
+      is_blacklisted = def.groups.attached_node
+         or def.groups.falling_node
+         or def.groups.leaves -- TODO: allow reinforcement of placed leaves
+         or def.groups.leafdecay
+   end
+   return is_blacklisted
+end
+
+-- Container/node locking privileges
 
 function ct.has_locked_container_privilege(pos, player)
    local pname = player:get_player_name()
@@ -216,6 +232,9 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
          if not ct.position_in_citadella_border(pos) then
             minetest.chat_send_player(pname, "You can't fortify blocks here!")
             return
+         elseif ct.blacklisted_node(newnode.name) then
+            minetest.chat_send_player(pname, "This block cannot be fortified!")
+            return
          end
 
          local current_reinf_group = ct.player_current_reinf_group[pname]
@@ -228,7 +247,7 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
 
          local inv = placer:get_inventory()
 
-         -- Ensure player has the required item to create the reinforcemnt
+         -- Ensure player has the required item to create the reinforcement
          if inv:contains_item("main", required_item) then
             local resource_limit = ct.resource_limits[current_reinf_material]
 
@@ -260,6 +279,9 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
       if ct.player_modes[pname] == ct.PLAYER_MODE_REINFORCE then
          if not ct.position_in_citadella_border(pos) then
             minetest.chat_send_player(pname, "You can't reinforce blocks here!")
+            return
+         elseif ct.blacklisted_node(node.name) then
+            minetest.chat_send_player(pname, "This block cannot be reinforced!")
             return
          end
 
