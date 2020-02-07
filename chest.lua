@@ -1,16 +1,4 @@
 
-local function has_locked_chest_privilege(pos, player)
-   local has_privilege, reinf, group
-      = ct.has_locked_container_privilege(pos, player)
-   if has_privilege then
-      return true, reinf, group
-   end
-   local pname = player:get_player_name()
-   minetest.chat_send_player(pname, "Chest is locked!")
-   return false
-end
-
-
 minetest.register_craft({
       type = "fuel",
       recipe = "citadella:chest",
@@ -28,10 +16,10 @@ minetest.register_craft({
 })
 
 
-local function make_open_formspec(reinf, group)
-   local chest_title = "Chest"
+function ct.make_open_formspec(reinf, group, name)
+   local chest_title = name or "Chest"
    if reinf then
-      chest_title = "Locked Chest (group: '" .. group.name .. "', "
+      chest_title = "Locked " .. chest_title .. " (group: '" .. group.name .. "', "
          .. tostring(reinf.material) .. ", " .. tostring(reinf.value) .. "/"
          .. tostring(ct.resource_limits[reinf.material]) .. ")"
    end
@@ -53,8 +41,11 @@ local function make_open_formspec(reinf, group)
    return table.concat(open, "")
 end
 
-local closed = "size[2,0.75]"..
-	"button[0,0.0;2,1;open;Open]"
+function ct.make_closed_formspec()
+   local closed = "size[2,0.75]"..
+      "button[0,0.0;2,1;open;Open]"
+   return closed
+end
 
 local prisonpearl = minetest.get_modpath("prisonpearl")
 
@@ -72,7 +63,7 @@ minetest.register_node(
       sounds = default.node_sound_wood_defaults(),
       on_construct = function(pos)
          local meta = minetest.get_meta(pos)
-         meta:set_string("formspec", closed)
+         meta:set_string("formspec", ct.make_closed_formspec())
          -- meta:set_string("infotext", "Locked chest")
          meta:set_string("owner", "")
          local inv = meta:get_inventory()
@@ -90,7 +81,7 @@ minetest.register_node(
       end,
       allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
          local meta = minetest.get_meta(pos)
-         if not has_locked_chest_privilege(pos, player) then
+         if not ct.has_locked_chest_privilege(pos, player) then
             minetest.log("action", player:get_player_name()..
                             " tried to access a locked chest belonging to "..
                             meta:get_string("owner").." at "..
@@ -101,7 +92,7 @@ minetest.register_node(
       end,
       allow_metadata_inventory_put = function(pos, listname, index, stack, player)
          local meta = minetest.get_meta(pos)
-         if not has_locked_chest_privilege(pos, player) then
+         if not ct.has_locked_chest_privilege(pos, player) then
             minetest.log("action", player:get_player_name()..
                             " tried to access a locked chest belonging to "..
                             meta:get_string("owner").." at "..
@@ -112,7 +103,7 @@ minetest.register_node(
       end,
       allow_metadata_inventory_take = function(pos, listname, index, stack, player)
          local meta = minetest.get_meta(pos)
-         if not has_locked_chest_privilege(pos, player) then
+         if not ct.has_locked_chest_privilege(pos, player) then
             minetest.log("action", player:get_player_name()..
                             " tried to access a locked chest belonging to "..
                             meta:get_string("owner").." at "..
@@ -159,12 +150,12 @@ minetest.register_node(
 
       on_receive_fields = function(pos, formname, fields, sender)
          local meta = minetest.get_meta(pos)
-         local can_open, reinf, group = has_locked_chest_privilege(pos, sender)
+         local can_open, reinf, group = ct.has_locked_chest_privilege(pos, sender)
          if can_open then
             if fields.open == "Open" then
-               meta:set_string("formspec", make_open_formspec(reinf, group))
+               meta:set_string("formspec", ct.make_open_formspec(reinf, group))
             else
-               meta:set_string("formspec", closed)
+               meta:set_string("formspec", ct.make_closed_formspec())
             end
          end
       end,

@@ -72,6 +72,18 @@ function ct.has_locked_container_privilege(pos, player)
 end
 
 
+function ct.has_locked_chest_privilege(pos, player)
+   local has_privilege, reinf, group
+      = ct.has_locked_container_privilege(pos, player)
+   if has_privilege then
+      return true, reinf, group
+   end
+   local pname = player:get_player_name()
+   minetest.chat_send_player(pname, "Chest is locked!")
+   return false
+end
+
+
 local function set_parameterized_mode(name, param, mode)
    local player = minetest.get_player_by_name(name)
    if not player then
