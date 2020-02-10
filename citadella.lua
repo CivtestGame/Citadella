@@ -285,6 +285,25 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
 end)
 
 
+function ct.can_player_access_reinf(pname, reinf)
+   if reinf then
+      -- Figure out if player is in the block's reinf group
+      local player_id = pm.get_player_by_name(pname).id
+      local player_groups = pm.get_groups_for_player(player_id)
+      local reinf_ctgroup_id = reinf.ctgroup_id
+
+      for _, group in ipairs(player_groups) do
+         if reinf_ctgroup_id == group.id then
+            return true, group
+         end
+      end
+
+      return false, nil
+   end
+   return true, nil
+end
+
+
 minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
       local pname = puncher:get_player_name()
       -- If we're in /ctr mode
@@ -325,19 +344,13 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          end
       elseif ct.player_modes[pname] == ct.PLAYER_MODE_INFO then
          local reinf = ct.get_reinforcement(pos)
-         if reinf then
-            -- TODO: this code keeps getting duplicated...
-            local player_id = pm.get_player_by_name(pname).id
-            local player_groups = pm.get_groups_for_player(player_id)
-            local reinf_ctgroup_id = reinf.ctgroup_id
-            local group_name = nil
+         if not reinf then
+            return
+         end
 
-            for _, group in ipairs(player_groups) do
-               if reinf_ctgroup_id == group.id then
-                  group_name = group.name
-                  break
-               end
-            end
+         local can_access, group = ct.can_player_access_reinf(pname, reinf)
+         if can_access then
+            local group_name = group.name
 
             local group_string = ""
             if group_name then
@@ -361,13 +374,17 @@ local is_protected_fn = minetest.is_protected
 
 -- BLOCK-BREAKING, /ctb
 function minetest.is_protected(pos, pname, action)
-   if action ~= minetest.DIG_ACTION then
-      return is_protected_fn(pos, pname, action)
-   end
    local reinf = ct.get_reinforcement(pos)
    if not reinf then
       return is_protected_fn(pos, pname, action)
    end
+
+   if action ~= minetest.DIG_ACTION then
+      local can_player_access = ct.can_player_access_reinf(pname, reinf)
+      return (not can_player_access)
+         or is_protected_fn(pos, pname, action)
+   end
+
    -- Handle people with protection_bypass privilege
    local privs = minetest.get_player_privs(pname)
    if privs and privs.protection_bypass then
@@ -383,21 +400,7 @@ function minetest.is_protected(pos, pname, action)
    end
 
    if ct.player_modes[pname] == ct.PLAYER_MODE_BYPASS then
-      -- Figure out if player is in the block's reinf group
-      -- TODO: this code keeps getting duplicated...
-      local player_id = pm.get_player_by_name(pname).id
-      local player_groups = pm.get_groups_for_player(player_id)
-      local reinf_ctgroup_id = reinf.ctgroup_id
-      local reinf_id_in_group_ids = false
-
-      for _, group in ipairs(player_groups) do
-         if reinf_ctgroup_id == group.id then
-            reinf_id_in_group_ids = true
-            break
-         end
-      end
-
-      if reinf_id_in_group_ids then
+      if ct.can_player_access_reinf(pname, reinf) then
          local refund_item_name = reinf.material
          local refund_item = ItemStack({
                name = refund_item_name,
