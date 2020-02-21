@@ -83,8 +83,7 @@ minetest.register_node(
          local meta = minetest.get_meta(pos)
          if not ct.has_locked_chest_privilege(pos, player) then
             minetest.log("action", player:get_player_name()..
-                            " tried to access a locked chest belonging to "..
-                            meta:get_string("owner").." at "..
+                            " tried to move in a locked chest at "..
                             minetest.pos_to_string(pos))
             return 0
          end
@@ -94,8 +93,7 @@ minetest.register_node(
          local meta = minetest.get_meta(pos)
          if not ct.has_locked_chest_privilege(pos, player) then
             minetest.log("action", player:get_player_name()..
-                            " tried to access a locked chest belonging to "..
-                            meta:get_string("owner").." at "..
+                            " tried to put into a locked chest at "..
                             minetest.pos_to_string(pos))
             return 0
          end
@@ -105,49 +103,24 @@ minetest.register_node(
          local meta = minetest.get_meta(pos)
          if not ct.has_locked_chest_privilege(pos, player) then
             minetest.log("action", player:get_player_name()..
-                            " tried to access a locked chest belonging to "..
-                            meta:get_string("owner").." at "..
+                            " tried to take from a locked chest at "..
                             minetest.pos_to_string(pos))
             return 0
          end
          return stack:get_count()
       end,
       on_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
-         minetest.log("action", player:get_player_name()..
+         minetest.log("verbose", player:get_player_name()..
                          " moves stuff in locked chest at "..minetest.pos_to_string(pos))
       end,
       on_metadata_inventory_put = function(pos, listname, index, stack, player)
-         minetest.log("action", player:get_player_name()..
+         minetest.log("verbose", player:get_player_name()..
                          " moves stuff to locked chest at "..minetest.pos_to_string(pos))
-         if prisonpearl then
-            if pp.is_bound_prison_pearl(stack) then
-               local prisoner = pp.get_pearl_prisoner(stack)
-               local pearl = pp.manager.get_pearl_by_name(prisoner)
-               if pearl then
-                  pp.manager.update_pearl_location(pearl, { type = "node", pos = pos })
-                  -- minetest.log("moved " .. prisoner .. " loc to chest " .. vtos(pos))
-               end
-            end
-         end
       end,
       on_metadata_inventory_take = function(pos, listname, index, stack, player)
-         minetest.log("action", player:get_player_name()..
+         minetest.log("verbose", player:get_player_name()..
                          " takes stuff from locked chest at "..minetest.pos_to_string(pos))
-         if prisonpearl then
-            if pp.is_bound_prison_pearl(stack) then
-               local prisoner = pp.get_pearl_prisoner(stack)
-               local pearl = pp.manager.get_pearl_by_name(prisoner)
-               if pearl then
-                  pp.manager.update_pearl_location(
-                     pearl,
-                     { type = "player", name = player:get_player_name() }
-                  )
-               end
-               -- minetest.log("moved " .. prisoner .. " loc to chest " .. vtos(pos))
-            end
-         end
       end,
-
       on_receive_fields = function(pos, formname, fields, sender)
          local meta = minetest.get_meta(pos)
          local can_open, reinf, group = ct.has_locked_chest_privilege(pos, sender)

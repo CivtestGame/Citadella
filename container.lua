@@ -19,8 +19,7 @@ function ct.wrap_allow_metadata_inventory_move(def)
       local meta = minetest.get_meta(pos)
       if not ct.has_locked_chest_privilege(pos, player) then
          minetest.log("action", player:get_player_name()..
-                         " tried to access a locked chest belonging to "..
-                         meta:get_string("owner").." at "..
+                         " tried to move in a locked chest at "..
                          minetest.pos_to_string(pos))
          return 0
       end
@@ -41,8 +40,7 @@ function ct.wrap_allow_metadata_inventory_put(def)
       local meta = minetest.get_meta(pos)
       if not ct.has_locked_chest_privilege(pos, player) then
          minetest.log("action", player:get_player_name()..
-                         " tried to access a locked chest belonging to "..
-                         meta:get_string("owner").." at "..
+                         " tried to access a locked chest at "..
                          minetest.pos_to_string(pos))
          return 0
       end
@@ -61,8 +59,7 @@ function ct.wrap_allow_metadata_inventory_take(def)
       local meta = minetest.get_meta(pos)
       if not ct.has_locked_chest_privilege(pos, player) then
          minetest.log("action", player:get_player_name()..
-                         " tried to access a locked chest belonging to "..
-                         meta:get_string("owner").." at "..
+                         " tried to take from a locked chest at "..
                          minetest.pos_to_string(pos))
          return 0
       end
