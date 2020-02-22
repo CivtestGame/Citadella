@@ -9,9 +9,9 @@ minetest.register_craft({
 minetest.register_craft({
       output = "citadella:chest",
       recipe = {
-         {'default:wood', 'default:wood', 'default:wood'},
-         {'default:wood', ''            , 'default:wood'},
-         {'default:wood', 'default:wood', 'default:wood'},
+         {'group:wood', 'group:wood', 'group:wood'},
+         {'group:wood', ''          , 'group:wood'},
+         {'group:wood', 'group:wood', 'group:wood'},
       }
 })
 

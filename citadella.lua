@@ -5,8 +5,9 @@ local diamond_limit = tonumber(minetest.settings:get("diamond_limit")) or 1800
 
 ct.resource_limits = {
    ["default:stone"]   = stone_limit,
-   ["default:steel_ingot"] = iron_limit,
-   ["default:diamond"] = diamond_limit
+   ["default:copper_ingot"] = iron_limit,
+   ["default:tin_ingot"] = iron_limit,
+   ["default:steel"] = diamond_limit
 }
 
 ct.PLAYER_MODE_NORMAL = "normal"
