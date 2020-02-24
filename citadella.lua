@@ -418,6 +418,12 @@ function minetest.is_protected(pos, pname, action)
                pname,
                refund_item_name .. " refunded from bypassed reinforcement."
             )
+         elseif inv:room_for_item("main2", refund_item) then
+            inv:add_item("main2", refund_item)
+            minetest.chat_send_player(
+               pname,
+               refund_item_name .. " refunded from bypassed reinforcement."
+            )
          else
             minetest.chat_send_player(
                pname,
