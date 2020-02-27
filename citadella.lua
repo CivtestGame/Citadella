@@ -7,7 +7,7 @@ ct.resource_limits = {
    ["default:stone"]   = stone_limit,
    ["default:copper_ingot"] = iron_limit,
    ["default:tin_ingot"] = iron_limit,
-   ["default:steel"] = diamond_limit
+   ["default:steel_ingot"] = diamond_limit
 }
 
 ct.PLAYER_MODE_NORMAL = "normal"

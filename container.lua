@@ -128,7 +128,7 @@ function ct.override_on_metadata_inventory_move(def)
          if from_list == "main" and to_list == "tmp" then
             local inv = minetest.get_meta(pos):get_inventory()
             local stack = inv:get_stack("tmp", to_index)
-            local leftover = player_api.give_item(player, stack)
+            local leftover = player_api.give_item(player, stack, true)
             inv:set_stack("main", from_index, leftover)
             inv:set_list("tmp", {})
          end
