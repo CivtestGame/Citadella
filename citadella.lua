@@ -38,7 +38,6 @@ end
 
 function ct.blacklisted_node(name)
    local def = core.registered_nodes[name]
-   minetest.log("node: "..name..": " .. dump(def.groups))
    local is_blacklisted = false
    if def and def.groups then
       is_blacklisted = def.groups.attached_node

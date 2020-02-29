@@ -21,7 +21,7 @@ cache:
 ]]--
 
 local chunk_reinf_cache = {}
-local cache_chunk_expiry = 10 -- debug, can be set to 60+
+local cache_chunk_expiry = 30 -- debug, can be set to 60+
 
 local function flush_reinf(reinf)
    local reinf_value = reinf.value
@@ -54,7 +54,7 @@ function ct.try_flush_cache()
    local current_time = os.time(os.date("!*t"))
    for key, chunk in pairs(chunk_reinf_cache) do
       if (chunk.time_added + cache_chunk_expiry) < current_time then
-         -- minetest.chat_send_all("Flushing chunk (" .. key .. ") to db:")
+         minetest.log("Flushing chunk (" .. key .. ") to db.")
          for _, reinf in pairs(chunk.reinforcements) do
             flush_reinf(reinf)
          end
@@ -66,7 +66,7 @@ end
 
 function ct.force_flush_cache()
    for key, chunk in pairs(chunk_reinf_cache) do
-      -- minetest.chat_send_all("Flushing chunk (" .. key .. ") to db:")
+      minetest.log("Force flushing chunk (" .. key .. ") to db.")
       for _, reinf in pairs(chunk.reinforcements) do
          flush_reinf(reinf)
       end
@@ -111,7 +111,8 @@ function ct.modify_reinforcement(pos, value)
       -- If this isn't done, Citadella would reload the value from the DB, which
       -- is almost certainly not coherent with the current state of the cache.
       chunk_reinf.reinforcements[vtos(pos)].value = 0
-      ct.force_flush_cache()
+      flush_reinf(chunk_reinf.reinforcements[vtos(pos)])
+
       -- Once the cache has been flushed, this reinforcement entry is removed.
       chunk_reinf.reinforcements[vtos(pos)] = nil
    else
