@@ -104,7 +104,7 @@ function ct.modify_reinforcement(pos, value)
    ct.chunk_ensure_cached(pos)
    local vchunk_start = get_pos_chunk(pos)
    local chunk_reinf = chunk_reinf_cache[vtos(vchunk_start)]
-   if value < 1 then
+   if value == 0 then
       -- We have to force a flush to get the DB in sync with the removal of the
       -- node's entry in the cache.
       --
