@@ -31,7 +31,7 @@ local citadella_border_radius = tonumber(minetest.settings:get("citadella_border
 if not citadella_border_radius then
    citadella_border_radius = 1000
    minetest.log(
-      "warn",
+      "warning",
       "No Citadella reinforcement border radius specified, defaulting to "
          .. tonumber(citadella_border_radius) .. "."
    )
