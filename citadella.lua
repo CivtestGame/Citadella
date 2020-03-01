@@ -27,7 +27,20 @@ ct.player_fortify_material = {}
 
 local zerozero = vector.new(0, 0, 0)
 
-local citadella_border_radius = 950
+local citadella_border_radius = tonumber(minetest.settings:get("citadella_border_radius"))
+if not citadella_border_radius then
+   citadella_border_radius = 1000
+   minetest.log(
+      "warn",
+      "No Citadella reinforcement border radius specified, defaulting to "
+         .. tonumber(citadella_border_radius) .. "."
+   )
+else
+   minetest.log(
+      "Citadella reinforcement border radius set to "
+         .. tonumber(citadella_border_radius) .. "."
+   )
+end
 
 function ct.position_in_citadella_border(pos)
    local pos_no_y = vector.new(pos.x, 0, pos.z)
