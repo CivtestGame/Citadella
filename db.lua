@@ -13,12 +13,16 @@ local driver = ie.require("luasql.postgres")
 local db = nil
 local env = nil
 
+local sourcename = minetest.settings:get("citadella_db_sourcename")
+local username = minetest.settings:get("citadella_db_username")
+local password = minetest.settings:get("citadella_db_password")
+
 local u = pmutils
 
 local function prep_db()
    env = assert (driver.postgres())
    -- connect to data source
-   db = assert (env:connect("citadella", "mt"))
+   db = assert (env:connect(sourcename, username, password))
 
    -- create reinforcements table
    local res = assert(u.prepare(db, [[
