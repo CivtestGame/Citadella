@@ -44,6 +44,7 @@ function ct.blacklisted_node(name)
          or def.groups.falling_node
          or def.groups.leaves -- TODO: allow reinforcement of placed leaves
          or def.groups.leafdecay
+         or name == "tnt:tnt"
    end
    return is_blacklisted
 end
