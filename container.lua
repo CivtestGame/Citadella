@@ -1,43 +1,38 @@
 
-function ct.make_open_formspec(reinf, group, name)
+function ct.make_open_formspec(reinf, group, name, pos)
+   local F = minetest.formspec_escape
    local chest_title = name or "Chest"
    if reinf then
-      chest_title = "Locked " .. chest_title .. " (group: '" .. group.name .. "', "
+      chest_title = "Locked " .. chest_title .. " (group: '" .. F(group.name) .. "', "
          .. tostring(reinf.material) .. ", " .. tostring(reinf.value) .. "/"
          .. tostring(ct.resource_limits[reinf.material]) .. ")"
    end
 
+   local spos = pos.x .. "," .. pos.y .. "," .. pos.z
+
    local open = {
-      "size[8,10]",
+      "size[8,9.5]",
       "label[0,0;", chest_title, "]",
       -- default.gui_bg ,
       -- default.gui_bg_img ,
       -- default.gui_slots ,
-      "list[current_name;main;0,0.7;8,4;]",
+      "list[nodemeta:"..spos..";main;0,0.7;8,4;]",
       -- invisible tmp invlist to facilitate shift-clicking to player inv
-      "list[current_name;tmp;0,0;0,0;]",
+      "list[nodemeta:"..spos..";tmp;0,0;0,0;]",
       "listring[]",
       sfinv.get_inventory_area_formspec(5.2),
-      "listring[current_name;main]",
+      "listring[nodemeta:"..spos..";main]",
       "listring[current_player;main2]",
-      "listring[current_name;main]",
+      "listring[nodemeta:"..spos..";main]",
       "listring[current_player;main]",
-      "button[3,9.35;2,1;open;Close]" -- ,
       -- default.get_hotbar_bg(0,4.85)
    }
    return table.concat(open, "")
 end
 
-function ct.make_closed_formspec()
-   local closed = "size[2,0.75]"..
-      "button[0,0.0;2,1;open;Open]"
-   return closed
-end
-
 function ct.override_on_construct(def)
    def.on_construct = function(pos)
       local meta = minetest.get_meta(pos)
-      meta:set_string("formspec", ct.make_closed_formspec())
       meta:set_string("owner", "")
       local inv = meta:get_inventory()
       inv:set_size("main", 8*4)
@@ -105,22 +100,6 @@ function ct.wrap_allow_metadata_inventory_take(def)
    return def
 end
 
-function ct.override_on_receive_fields(def)
-   def.on_receive_fields = function(pos, formname, fields, sender)
-      local meta = minetest.get_meta(pos)
-      local can_open, reinf, group = ct.has_locked_chest_privilege(pos, sender)
-      if can_open then
-         if fields.open == "Open" then
-            local name = core.registered_nodes[minetest.get_node(pos).name].description
-            meta:set_string("formspec", ct.make_open_formspec(reinf, group, name))
-         else
-            meta:set_string("formspec", ct.make_closed_formspec())
-         end
-      end
-   end
-   return def
-end
-
 function ct.override_on_metadata_inventory_move(def)
    local old_on_metadata_inventory_move = def.on_metadata_inventory_move
    def.on_metadata_inventory_move =
@@ -168,15 +147,36 @@ function ct.override_on_metadata_inventory_take_put(def)
    end
 end
 
+function ct.override_on_rightclick(def)
+   local old_on_rightclick = def.on_rightclick
+   def.on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
+      local node_description = core.registered_nodes[node.name].description
+      local has_privilege, reinf, group
+         = ct.has_locked_chest_privilege(pos, clicker, node_description)
+      if not has_privilege then
+         return
+      end
+
+      local pname = clicker:get_player_name()
+      local formspec = ct.make_open_formspec(reinf, group, node_description, pos)
+      minetest.show_formspec(pname, "citadella:chest", formspec)
+
+      if old_on_rightclick then
+         old_on_rightclick(pos, node, clicker, itemstack, pointed_thing)
+      end
+   end
+   return def
+end
+
 function ct.override_definition(olddef)
    local def = table.copy(olddef)
    ct.override_on_construct(def)
    ct.wrap_allow_metadata_inventory_move(def)
    ct.wrap_allow_metadata_inventory_put(def)
    ct.wrap_allow_metadata_inventory_take(def)
-   ct.override_on_receive_fields(def)
    ct.override_on_metadata_inventory_move(def)
    ct.override_on_metadata_inventory_take_put(def)
+   ct.override_on_rightclick(def)
 
    return def
 end
