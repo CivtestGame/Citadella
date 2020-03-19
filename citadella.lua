@@ -366,23 +366,23 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
             return
          end
 
+         local group_string = ""
+
          local can_access, group = ct.can_player_access_reinf(pname, reinf)
          if can_access then
             local group_name = group.name
-
-            local group_string = ""
             if group_name then
                group_string = " on group '" .. group_name .. "'"
             end
-
-            minetest.chat_send_player(
-               pname,
-               "Block (" .. vtos(pos) ..") is reinforced" .. group_string
-                  ..  " with " .. reinf.material
-                  .. " (" .. tostring(reinf.value) .. "/"
-                  .. tostring(ct.resource_limits[reinf.material]) .. ")."
-            )
          end
+
+         minetest.chat_send_player(
+            pname,
+            "Block (" .. vtos(pos) .. ") is reinforced" .. group_string
+               .. " with " .. reinf.material
+               .. " (" .. tostring(reinf.value) .. "/"
+               .. tostring(ct.resource_limits[reinf.material]) .. ")."
+         )
       end
 end)
 
