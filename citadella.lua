@@ -457,15 +457,7 @@ function minetest.is_protected(pos, pname, action)
    else
       -- Decrement reinforcement
       local remaining = ct.modify_reinforcement(pos, reinf.value - 1)
-      if remaining > 0 then
-         minetest.chat_send_player(
-            pname,
-            "Block reinforcement remaining: " .. tostring(remaining)
-         )
-         return true
-      else
-         return is_protected_fn(pos, pname, action)
-      end
+      return remaining > 0 or is_protected_fn(pos, pname, action)
    end
 
 end
