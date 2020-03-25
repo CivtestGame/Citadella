@@ -10,15 +10,17 @@ ct.resource_limits = {
    ["default:steel_ingot"] = diamond_limit
 }
 
-ct.PLAYER_MODE_NORMAL = "normal"
 ct.PLAYER_MODE_REINFORCE = "reinforce"
-ct.PLAYER_MODE_BYPASS = "bypass"
 ct.PLAYER_MODE_FORTIFY = "fortify"
 ct.PLAYER_MODE_INFO = "info"
 
 -- Mapping of Player -> Citadel mode
--- XXX: couldn't get player:set_properties working so this could be nicer
 ct.player_modes = {}
+
+-- Citadella bypass is tracked separately to the other modes. It's useful to be
+-- able to have bypass mode enabled in parallel to fortify.
+ct.player_bypass = {}
+
 ct.player_current_reinf_group = {}
 ct.player_fortify_material = {}
 
@@ -131,12 +133,13 @@ local function set_parameterized_mode(name, param, mode)
             " (group: '" .. ctgroup.name .. "')"
       )
    else
-      ct.player_modes[pname] = ct.PLAYER_MODE_NORMAL
+      ct.player_modes[pname] = nil
       minetest.chat_send_player(
          pname,
-         "Citadella mode: " .. ct.player_modes[pname]
+         "Citadella mode: " .. (ct.player_modes[pname] or "normal")
       )
    end
+   ct.update_hud(player)
    return true
 end
 
@@ -178,6 +181,16 @@ minetest.register_chatcommand("ctf", {
    end
 })
 
+local function toggle_bypass_mode(name)
+   if not ct.player_bypass[name] then
+      minetest.chat_send_player(name, "Citadella bypass mode: enabled.")
+      ct.player_bypass[name] = true
+   else
+      minetest.chat_send_player(name, "Citadella bypass mode: disabled.")
+      ct.player_bypass[name] = nil
+   end
+   ct.update_hud(minetest.get_player_by_name(name))
+end
 
 local function set_simple_mode(name, mode)
    local player = minetest.get_player_by_name(name)
@@ -186,14 +199,17 @@ local function set_simple_mode(name, mode)
    end
    local pname = player:get_player_name()
    local current_pmode = ct.player_modes[pname]
-   if mode == ct.PLAYER_MODE_NORMAL then
+   if not mode then
       ct.player_modes[pname] = mode
    elseif current_pmode == nil or current_pmode ~= mode then
       ct.player_modes[pname] = mode
    else -- Toggle
-      ct.player_modes[pname] = ct.PLAYER_MODE_NORMAL
+      ct.player_modes[pname] = nil
    end
-   minetest.chat_send_player(pname, "Citadella mode: " .. ct.player_modes[pname])
+   minetest.chat_send_player(
+      pname, "Citadella mode: " .. (ct.player_modes[pname] or "normal")
+   )
+   ct.update_hud(player)
 end
 
 
@@ -204,7 +220,7 @@ minetest.register_chatcommand("ctb", {
       if param ~= "" then
          minetest.chat_send_player(name, "Error: Usage: /ctb")
       else
-         set_simple_mode(name, ct.PLAYER_MODE_BYPASS)
+         toggle_bypass_mode(name)
       end
    end
 })
@@ -217,7 +233,8 @@ minetest.register_chatcommand("cto", {
       if param ~= "" then
          minetest.chat_send_player(name, "Error: Usage: /cto")
       else
-         set_simple_mode(name, ct.PLAYER_MODE_NORMAL)
+         ct.player_bypass[name] = nil
+         set_simple_mode(name, nil) -- NORMAL
       end
    end
 })
@@ -293,7 +310,7 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
                pname,
                "Inventory has no more " .. current_reinf_material .. "."
             )
-            set_simple_mode(pname, ct.PLAYER_MODE_NORMAL)
+            set_simple_mode(pname, nil)
          end
       end
 end)
@@ -417,7 +434,7 @@ function minetest.is_protected(pos, pname, action)
       return is_protected_fn(pos, pname, action)
    end
 
-   if ct.player_modes[pname] == ct.PLAYER_MODE_BYPASS then
+   if ct.player_bypass[pname] then
       if ct.can_player_access_reinf(pname, reinf) then
          local refund_item_name = reinf.material
          local refund_item = ItemStack({
