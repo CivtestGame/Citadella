@@ -10,32 +10,48 @@ local ct_huds_bypass = {}
 local Y_OFFSET_SPACE = 26
 local X_OFFSET_SPACE = -90
 
+function ct.remove_hud(player)
+   local pname = player:get_player_name()
+
+   local _
+   _ = ct_huds[pname] and player:hud_remove(ct_huds[pname])
+   _ = ct_huds_bg[pname] and player:hud_remove(ct_huds_bg[pname])
+   _ = ct_huds_mode[pname] and player:hud_remove(ct_huds_mode[pname])
+   _ = ct_huds_group[pname] and player:hud_remove(ct_huds_group[pname])
+   _ = ct_huds_bypass[pname] and player:hud_remove(ct_huds_bypass[pname])
+
+   ct_huds[pname] = nil
+   ct_huds_bg[pname] = nil
+   ct_huds_mode[pname] = nil
+   ct_huds_group[pname] = nil
+   ct_huds_bypass[pname] = nil
+end
+
+minetest.register_on_leaveplayer(function(player)
+      ct.remove_hud(player)
+end)
+
+minetest.register_on_joinplayer(function(player)
+      ct.update_hud(player)
+end)
+
 function ct.update_hud(player)
    local pname = player:get_player_name()
 
    local mode = ct.player_modes[pname]
    local bypass = ct.player_bypass[pname]
 
+   -- remove existing huds if no modes are enabled
+   if not (mode or bypass) then
+      ct.remove_hud(player)
+      return
+   end
+
    local title_idx = ct_huds[pname]
    local bg_idx = ct_huds_bg[pname]
    local mode_idx = ct_huds_mode[pname]
    local group_idx = ct_huds_group[pname]
    local bypass_idx = ct_huds_bypass[pname]
-
-   -- remove existing huds if no modes are enabled
-   if not (mode or bypass) and title_idx then
-      player:hud_remove(title_idx)
-      player:hud_remove(bg_idx)
-      player:hud_remove(mode_idx)
-      player:hud_remove(group_idx)
-      player:hud_remove(bypass_idx)
-      ct_huds[pname] = nil
-      ct_huds_bg[pname] = nil
-      ct_huds_group[pname] = nil
-      ct_huds_mode[pname] = nil
-      ct_huds_bypass[pname] = nil
-      return
-   end
 
    local modestring = "Mode: NONE"
    local mode_color = 0x888888
