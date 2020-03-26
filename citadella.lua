@@ -252,21 +252,6 @@ minetest.register_chatcommand("cti", {
    end
 })
 
-
-minetest.register_chatcommand("test", {
-   params = "",
-   description = "R3's test command",
-   func = function(name, param)
-      local player = minetest.get_player_by_name(name)
-      if not player then
-         return false
-      end
-      local pname = player:get_player_name()
-      pm.register_player(param)
-      return true
-   end
-})
-
 -- XXX: documents say this isn't recommended, use node definition callbacks instead
 minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack, pointed_thing)
       local pname = placer:get_player_name()
