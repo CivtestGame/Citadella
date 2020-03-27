@@ -49,6 +49,19 @@ function ct.wrap_allow_metadata_inventory_move(def)
 
    def.allow_metadata_inventory_move = function(pos, from_list, from_index, to_list, to_index, count, player)
       local meta = minetest.get_meta(pos)
+      if from_list == "main" and to_list == "tmp" then
+         local inv = minetest.get_meta(pos):get_inventory()
+         local stack = inv:get_stack("main", from_index)
+         local stack_count = stack:take_item(count)
+
+         local pinv = player:get_inventory()
+         if not pinv:room_for_item("main", stack_count)
+            and not pinv:room_for_item("main2", stack_count)
+         then
+            return 0
+         end
+      end
+
       if not ct.has_locked_chest_privilege(pos, player) then
          minetest.log("action", player:get_player_name()..
                          " tried to move in a locked chest at "..
