@@ -152,6 +152,14 @@ minetest.register_chatcommand("ctr", {
    end
 })
 
+function ct.get_valid_reinforcement_items()
+   local valid_names = pmutils.table_keyvals(ct.resource_limits)
+   local valid_descriptions = {}
+   for i,name in ipairs(valid_names) do
+      valid_descriptions[i] = core.registered_items[name].description
+   end
+   return valid_names, valid_descriptions
+end
 
 minetest.register_chatcommand("ctf", {
    params = "",
@@ -164,20 +172,39 @@ minetest.register_chatcommand("ctf", {
       local pname = player:get_player_name()
       local item = player:get_wielded_item()
       local item_name = item:get_name()
+      local item_description = item:get_definition().description
+
       local resource_limit = ct.resource_limits[item_name]
       if resource_limit then
          ct.player_fortify_material[pname] = item_name
          set_parameterized_mode(pname, param, ct.PLAYER_MODE_FORTIFY)
          return true
       else
-         local valid_materials = pmutils.table_keyvals(ct.resource_limits)
+         local valid_names, valid_descs = ct.get_valid_reinforcement_items()
          minetest.chat_send_player(
             pname,
-            "Error: " .. item_name .. " is not a valid reinforcement material ("
-               .. table.concat(valid_materials, ", ") .. ")."
+            "Error: " .. item_description .. " is not a valid reinforcement"
+               .. " material (" .. table.concat(valid_descs, ", ") .. ")."
          )
          return false
       end
+   end
+})
+
+minetest.register_chatcommand("ctm", {
+   params = "",
+   description = "List valid Citadella materials.",
+   func = function(name, param)
+         local valid_names, valid_descs = ct.get_valid_reinforcement_items()
+         local cleaned = {}
+         for i,name in ipairs(valid_names) do
+            cleaned[i] = valid_descs[i] .. " ("
+               .. tostring(ct.resource_limits[name]) .. ")"
+         end
+
+         minetest.chat_send_player(
+            name, "Valid Citadella materials: "..table.concat(cleaned, ", ")
+         )
    end
 })
 
