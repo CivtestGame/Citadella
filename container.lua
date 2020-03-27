@@ -107,8 +107,24 @@ function ct.override_on_metadata_inventory_move(def)
          if from_list == "main" and to_list == "tmp" then
             local inv = minetest.get_meta(pos):get_inventory()
             local stack = inv:get_stack("tmp", to_index)
-            local leftover = player_api.give_item(player, stack, true)
-            inv:set_stack("main", from_index, leftover)
+            local stack_count = stack:take_item(count)
+
+            local leftover = player_api.give_item(player, stack_count, true)
+            local leftover_count = (leftover and leftover:get_count()) or 0
+
+            local from = inv:get_stack("main", from_index, stack)
+            local from_count = from:get_count()
+
+            from:set_count(math.max(0, from_count + leftover_count))
+
+            inv:set_stack("main", from_index, from)
+
+            -- XXX: I feel bad about this, just in case there are bugs that
+            -- cause "tmp" to remain non-empty (and valid items get nuked).
+            --
+            -- But, for now, I think I would prefer to receive complaints than
+            -- spew the items out into the world. That way, the players report
+            -- the bugs, instead of getting used to 'weird' behaviour.
             inv:set_list("tmp", {})
          end
          minetest.log("verbose",
