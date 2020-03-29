@@ -302,21 +302,32 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
 
          local inv = placer:get_inventory()
 
+         local invlist = (inv:contains_item("main", required_item) and "main")
+            or (inv:contains_item("main2", required_item) and "main2")
+
          -- Ensure player has the required item to create the reinforcement
-         if inv:contains_item("main", required_item) then
+         if invlist then
             local resource_limit = ct.resource_limits[current_reinf_material]
 
             ct.register_reinforcement(pos, current_reinf_group.id,
                                       current_reinf_material, resource_limit)
 
+            local desc = core.registered_items[current_reinf_material].description
+
             minetest.chat_send_player(
                pname,
                "Reinforced placed block (" .. vtos(pos) .. ") with "
-                  .. current_reinf_material .. " (" .. tostring(resource_limit)
+                  .. desc .. " (" .. tostring(resource_limit)
                   .. ") (group: '" .. current_reinf_group.name .. "')."
             )
 
-            inv:remove_item("main", required_item)
+            -- Edge case when fortifying stone with stone: remove_item doesn't
+            -- work, for some reason...
+            if current_reinf_material == newnode.name then
+               itemstack:take_item()
+            else
+               inv:remove_item(invlist, required_item)
+            end
          else
             minetest.chat_send_player(
                pname,
