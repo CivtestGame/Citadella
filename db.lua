@@ -7,9 +7,15 @@ Database connection functionality via PostgreSQL.
 ]]--
 
 local ie = minetest.request_insecure_environment() or
-   error("Mod requires decreased security settings in minetest.conf")
+   error("Citadella needs to be a trusted mod. "
+            .."Add it to `secure.trusted_mods` in minetest.conf")
 
-local driver = ie.require("luasql.postgres")
+local driver_exists, driver = pcall(ie.require, "luasql.postgres")
+if not driver_exists then
+   error("[Citadella] Lua PostgreSQL driver not found. "
+            .."Please install it (try 'luarocks install luasql-postgres').")
+end
+
 local db = nil
 local env = nil
 
