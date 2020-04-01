@@ -65,6 +65,22 @@ function ctdb.register_reinforcement(pos, ctgroup_id, item_name)
                     value, item_name, ctgroup_id))
 end
 
+local QUERY_UPDATE_REINFORCEMENT_GROUP = [[
+  UPDATE reinforcement
+  SET ctgroup_id = ?
+  WHERE ctgroup_id = ?
+    AND reinforcement.x = ?
+    AND reinforcement.y = ?
+    AND reinforcement.z = ?
+]]
+
+function ctdb.update_reinforcement_group(pos, old_ctgroup_id, new_ctgroup_id)
+   assert(u.prepare(db, QUERY_UPDATE_REINFORCEMENT_GROUP,
+                    new_ctgroup_id, old_ctgroup_id,
+                    pos.x, pos.y, pos.z))
+end
+
+
 local QUERY_REMOVE_REINFORCEMENT = [[
   DELETE FROM reinforcement
   WHERE reinforcement.x = ?

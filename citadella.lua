@@ -13,6 +13,7 @@ ct.resource_limits = {
 ct.PLAYER_MODE_REINFORCE = "reinforce"
 ct.PLAYER_MODE_FORTIFY = "fortify"
 ct.PLAYER_MODE_INFO = "info"
+ct.PLAYER_MODE_CHANGE = "change"
 
 -- Mapping of Player -> Citadel mode
 ct.player_modes = {}
@@ -150,6 +151,15 @@ minetest.register_chatcommand("ctr", {
       .."Reinforces punched nodes with the held material.",
    func = function(name, param)
       set_parameterized_mode(name, param, ct.PLAYER_MODE_REINFORCE)
+   end
+})
+
+minetest.register_chatcommand("ctc", {
+   params = "<group>",
+   description = "Citadella CHANGE mode. "
+      .."Changes the reinforcement group of punched nodes.",
+   func = function(name, param)
+      set_parameterized_mode(name, param, ct.PLAYER_MODE_CHANGE)
    end
 })
 
@@ -433,6 +443,31 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
                .. " with " .. reinf_desc
                .. " (" .. tostring(reinf.value) .. "/"
                .. tostring(ct.resource_limits[reinf.material]) .. ")."
+         )
+      elseif ct.player_modes[pname] == ct.PLAYER_MODE_CHANGE then
+         local reinf = ct.get_reinforcement(pos)
+         local current_reinf_group = ct.player_current_reinf_group[pname]
+         if not reinf then
+            minetest.chat_send_player(
+               pname, "Block at (" .. vtos(pos) .. ") "
+                  .."has no reinforcement."
+            )
+            return
+         end
+
+         if reinf.ctgroup_id == current_reinf_group.id then
+            minetest.chat_send_player(
+               pname, "Block at (" .. vtos(pos) .. ") "
+                  .. "is already on group '" .. current_reinf_group.name .. "'."
+            )
+            return
+         end
+
+         ct.update_reinforcement_group(reinf, pos, current_reinf_group.id)
+
+         minetest.chat_send_player(
+            pname, "Changed group of block at (" .. vtos(pos) .. ") to '"
+               .. current_reinf_group.name .. "'."
          )
       end
 end)

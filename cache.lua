@@ -135,3 +135,15 @@ function ct.register_reinforcement(pos, ctgroup_id, item_name, resource_limit)
       }
    end
 end
+
+function ct.update_reinforcement_group(reinf, pos, ctgroup_id)
+   ctdb.update_reinforcement_group(
+      pos, reinf.ctgroup_id, ctgroup_id
+   )
+
+   local vchunk = get_pos_chunk(pos)
+   local cached_reinf = chunk_reinf_cache[vtos(vchunk)].reinforcements[vtos(pos)]
+   if cached_reinf then
+      cached_reinf.ctgroup_id = ctgroup_id
+   end
+end
