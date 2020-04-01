@@ -146,7 +146,8 @@ end
 
 minetest.register_chatcommand("ctr", {
    params = "<group>",
-   description = "Citadella reinforce with material",
+   description = "Citadella REINFORCE mode. "
+      .."Reinforces punched nodes with the held material.",
    func = function(name, param)
       set_parameterized_mode(name, param, ct.PLAYER_MODE_REINFORCE)
    end
@@ -163,7 +164,8 @@ end
 
 minetest.register_chatcommand("ctf", {
    params = "",
-   description = "Citadella fortify mode",
+   description = "Citadella FORTIFY mode. "
+      .."Automatically reinforces placed nodes.",
    func = function(name, param)
       local player = minetest.get_player_by_name(name)
       if not player then
@@ -193,7 +195,7 @@ minetest.register_chatcommand("ctf", {
 
 minetest.register_chatcommand("ctm", {
    params = "",
-   description = "List valid Citadella materials.",
+   description = "List valid Citadella reinforcement materials.",
    func = function(name, param)
          local valid_names, valid_descs = ct.get_valid_reinforcement_items()
          local cleaned = {}
@@ -242,7 +244,9 @@ end
 
 minetest.register_chatcommand("ctb", {
    params = "",
-   description = "Citadella bypass owned reinforcements",
+   description = "Citadella BYPASS mode. "
+      .."Bypass owned reinforcements, returning the reinforcement material "
+      .."(operates independently from other modes).",
    func = function(name, param)
       if param ~= "" then
          minetest.chat_send_player(name, "Error: Usage: /ctb")
@@ -255,7 +259,7 @@ minetest.register_chatcommand("ctb", {
 
 minetest.register_chatcommand("cto", {
    params = "",
-   description = "Citadella reset player mode",
+   description = "Turn off any current Citadella modes.",
    func = function(name, param)
       if param ~= "" then
          minetest.chat_send_player(name, "Error: Usage: /cto")
@@ -378,6 +382,7 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          local item = puncher:get_wielded_item()
          -- If we punch something with a reinforcement item
          local item_name = item:get_name()
+         local item_desc = minetest.registered_items[item_name].description
          local resource_limit = ct.resource_limits[item_name]
          if resource_limit then
             local reinf = ct.get_reinforcement(pos)
@@ -391,13 +396,17 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
                )
                minetest.chat_send_player(
                   pname,
-                  "Reinforced block ("..vtos(pos)..") with " .. item_name ..
-                     " (" .. tostring(resource_limit) .. ") (group: '" ..
-                     current_reinf_group.name .. "')."
+                  "Reinforced block ("..vtos(pos)..") with " .. item_desc ..
+                     " (" .. tostring(resource_limit) .. ") on group " ..
+                     current_reinf_group.name .. "."
                )
             else
-               minetest.chat_send_player(pname, "Block is already reinforced: " .. reinf.material ..
-                                            " (" .. tostring(reinf.value) .. ")")
+               local reinf_desc
+                  = minetest.registered_items[reinf.material].description
+               minetest.chat_send_player(
+                  pname, "Block is already reinforced with " .. reinf_desc
+                     .. " (" .. tostring(reinf.value) .. ")"
+               )
             end
          end
       elseif ct.player_modes[pname] == ct.PLAYER_MODE_INFO then
@@ -405,6 +414,8 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          if not reinf then
             return
          end
+         local reinf_desc
+            = minetest.registered_items[reinf.material].description
 
          local group_string = ""
 
@@ -419,7 +430,7 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          minetest.chat_send_player(
             pname,
             "Block (" .. vtos(pos) .. ") is reinforced" .. group_string
-               .. " with " .. reinf.material
+               .. " with " .. reinf_desc
                .. " (" .. tostring(reinf.value) .. "/"
                .. tostring(ct.resource_limits[reinf.material]) .. ")."
          )
