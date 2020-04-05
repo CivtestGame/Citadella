@@ -6,9 +6,7 @@ Database connection functionality via PostgreSQL.
 
 ]]--
 
-local ie = minetest.request_insecure_environment() or
-   error("Citadella needs to be a trusted mod. "
-            .."Add it to `secure.trusted_mods` in minetest.conf")
+local ie = ...
 
 local driver_exists, driver = pcall(ie.require, "luasql.postgres")
 if not driver_exists then

@@ -13,7 +13,11 @@ minetest.debug("Citadella initialised")
 
 local modpath = minetest.get_modpath(minetest.get_current_modname())
 
-local db = dofile(modpath .. "/db.lua")
+local ie = minetest.request_insecure_environment() or
+   error("Citadella needs to be a trusted mod. "
+            .."Add it to `secure.trusted_mods` in minetest.conf")
+
+loadfile(modpath .. "/db.lua")(ie)
 dofile(modpath .. "/cache.lua")
 dofile(modpath .. "/citadella.lua")
 dofile(modpath .. "/hud.lua")
