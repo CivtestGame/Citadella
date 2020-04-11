@@ -455,6 +455,15 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
             return
          end
 
+         local can_access = ct.can_player_access_reinf(pname, reinf)
+         if not can_access then
+            minetest.chat_send_player(
+               pname, "You do not have access to the reinforcement at "
+                  .. "(" .. vtos(pos) .. ")."
+            )
+            return
+         end
+
          if reinf.ctgroup_id == current_reinf_group.id then
             minetest.chat_send_player(
                pname, "Block at (" .. vtos(pos) .. ") "
