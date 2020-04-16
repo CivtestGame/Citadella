@@ -499,6 +499,15 @@ local is_protected_fn = minetest.is_protected
 function minetest.is_protected(pos, pname, action)
 
    if node_is_attached(pos) then
+      if ct.player_bypass[pname] then
+         local nodedef = minetest.registered_nodes[minetest.get_node(pos).name]
+         local node_desc = (nodedef and nodedef.description) or "UNDEFINED"
+         minetest.chat_send_player(
+            pname, node_desc .. " can only be Citadella bypassed by destroying "
+               .. "the underlying node."
+         )
+         return true
+      end
       pos = vector.new(pos.x, pos.y - 1, pos.z)
    end
 
