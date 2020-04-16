@@ -375,9 +375,19 @@ function ct.can_player_access_reinf(pname, reinf)
    return true, nil
 end
 
+local function node_is_attached(pos)
+   local node = minetest.get_node(pos)
+   local nodedef = minetest.registered_nodes[node.name]
+   return nodedef and nodedef.groups and nodedef.groups.attached_node
+end
 
 minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
       local pname = puncher:get_player_name()
+
+      if node_is_attached(pos) then
+         pos = vector.new(pos.x, pos.y - 1, pos.z)
+      end
+
       -- If we're in /ctr mode
       if ct.player_modes[pname] == ct.PLAYER_MODE_REINFORCE then
          if not ct.position_in_citadella_border(pos) then
@@ -487,6 +497,11 @@ local is_protected_fn = minetest.is_protected
 
 -- BLOCK-BREAKING, /ctb
 function minetest.is_protected(pos, pname, action)
+
+   if node_is_attached(pos) then
+      pos = vector.new(pos.x, pos.y - 1, pos.z)
+   end
+
    local reinf = ct.get_reinforcement(pos)
    if not reinf then
       return is_protected_fn(pos, pname, action)
