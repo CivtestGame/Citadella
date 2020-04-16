@@ -24,7 +24,7 @@ minetest.register_node(
               "default_chest.png^[sheet:2x2:1,0", "default_chest.png^[sheet:2x2:1,0",
               "default_chest.png^[sheet:2x2:1,0", "default_chest.png^[sheet:2x2:1,1"},
       paramtype2 = "facedir",
-      groups = {snappy=2,choppy=2,oddly_breakable_by_hand=2},
+      groups = {choppy=2},
       legacy_facedir_simple = true,
       is_ground_content = false,
       sounds = default.node_sound_wood_defaults(),
