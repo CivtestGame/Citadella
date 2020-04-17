@@ -498,16 +498,23 @@ local is_protected_fn = minetest.is_protected
 -- BLOCK-BREAKING, /ctb
 function minetest.is_protected(pos, pname, action)
 
-   if node_is_attached(pos) then
-      if ct.player_bypass[pname] then
-         local nodedef = minetest.registered_nodes[minetest.get_node(pos).name]
-         local node_desc = (nodedef and nodedef.description) or "UNDEFINED"
-         minetest.chat_send_player(
-            pname, node_desc .. " can only be Citadella bypassed by destroying "
-               .. "the underlying node."
-         )
+   -- /ctb of attached_nodes should break the node, but we don't want to return
+   -- the reinforcement item of the underlying.
+   if node_is_attached(pos)
+      and action == minetest.DIG_ACTION
+      and ct.player_bypass[pname]
+   then
+      local under = vector.new(pos.x, pos.y - 1, pos.z)
+      local reinf = ct.get_reinforcement(under)
+      local can_player_access = ct.can_player_access_reinf(pname, reinf)
+      if can_player_access then
+         return is_protected_fn(pos, pname, action)
+      else
          return true
       end
+   end
+
+   if node_is_attached(pos) then
       pos = vector.new(pos.x, pos.y - 1, pos.z)
    end
 
