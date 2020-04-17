@@ -498,23 +498,18 @@ local is_protected_fn = minetest.is_protected
 -- BLOCK-BREAKING, /ctb
 function minetest.is_protected(pos, pname, action)
 
-   -- /ctb of attached_nodes should break the node, but we don't want to return
-   -- the reinforcement item of the underlying.
-   if node_is_attached(pos)
-      and action == minetest.DIG_ACTION
-      and ct.player_bypass[pname]
-   then
-      local under = vector.new(pos.x, pos.y - 1, pos.z)
-      local reinf = ct.get_reinforcement(under)
-      local can_player_access = ct.can_player_access_reinf(pname, reinf)
-      if can_player_access then
-         return is_protected_fn(pos, pname, action)
-      else
-         return true
-      end
-   end
-
    if node_is_attached(pos) then
+      -- /ctb of attached_nodes should break the node, but we don't want to
+      -- return the reinforcement item of the underlying.
+      if action == minetest.DIG_ACTION and ct.player_bypass[pname] then
+         local under = vector.new(pos.x, pos.y - 1, pos.z)
+         local reinf = ct.get_reinforcement(under)
+         local can_player_access = ct.can_player_access_reinf(pname, reinf)
+         if can_player_access then
+            return is_protected_fn(pos, pname, action)
+         end
+      end
+      -- Reference the reinforcement of the underlying node.
       pos = vector.new(pos.x, pos.y - 1, pos.z)
    end
 
@@ -578,12 +573,10 @@ function minetest.is_protected(pos, pname, action)
          return is_protected_fn(pos, pname, action)
       else
          minetest.chat_send_player(pname, "You can't bypass this!")
-         return true
       end
-   else
-      -- Decrement reinforcement
-      local remaining = ct.modify_reinforcement(pos, reinf.value - 1)
-      return remaining > 0 or is_protected_fn(pos, pname, action)
    end
 
+   -- Decrement reinforcement
+   local remaining = ct.modify_reinforcement(pos, reinf.value - 1)
+   return remaining > 0 or is_protected_fn(pos, pname, action)
 end
