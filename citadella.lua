@@ -1,15 +1,4 @@
 
-local stone_limit = tonumber(minetest.settings:get("stone_limit")) or 25
-local iron_limit = tonumber(minetest.settings:get("iron_limit")) or 250
-local diamond_limit = tonumber(minetest.settings:get("diamond_limit")) or 1800
-
-ct.resource_limits = {
-   ["default:stone"]   = stone_limit,
-   ["default:copper_ingot"] = iron_limit,
-   ["default:tin_ingot"] = iron_limit,
-   ["default:steel_ingot"] = diamond_limit
-}
-
 ct.PLAYER_MODE_REINFORCE = "reinforce"
 ct.PLAYER_MODE_FORTIFY = "fortify"
 ct.PLAYER_MODE_INFO = "info"
@@ -164,10 +153,11 @@ minetest.register_chatcommand("ctc", {
 })
 
 function ct.get_valid_reinforcement_items()
-   local valid_names = pmutils.table_keyvals(ct.resource_limits)
+   local valid_names = {}
    local valid_descriptions = {}
-   for i,name in ipairs(valid_names) do
-      valid_descriptions[i] = core.registered_items[name].description
+   for name,def in pairs(ct.reinforcement_types) do
+      valid_names[#valid_names + 1] = def.item_name
+      valid_descriptions[#valid_descriptions + 1] = def.name
    end
    return valid_names, valid_descriptions
 end
@@ -186,8 +176,8 @@ minetest.register_chatcommand("ctf", {
       local item_name = item:get_name()
       local item_description = item:get_definition().description
 
-      local resource_limit = ct.resource_limits[item_name]
-      if resource_limit then
+      local is_valid_reinf_item = ct.reinforcement_types[item_name]
+      if is_valid_reinf_item then
          ct.player_fortify_material[pname] = item_name
          set_parameterized_mode(pname, param, ct.PLAYER_MODE_FORTIFY)
          return true
@@ -210,8 +200,8 @@ minetest.register_chatcommand("ctm", {
          local valid_names, valid_descs = ct.get_valid_reinforcement_items()
          local cleaned = {}
          for i,name in ipairs(valid_names) do
-            cleaned[i] = valid_descs[i] .. " ("
-               .. tostring(ct.resource_limits[name]) .. ")"
+            local value_limit = ct.reinforcement_types[name].value
+            cleaned[i] = valid_descs[i] .. " (" .. value_limit .. ")"
          end
 
          minetest.chat_send_player(
@@ -321,7 +311,8 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
 
          -- Ensure player has the required item to create the reinforcement
          if invlist then
-            local resource_limit = ct.resource_limits[current_reinf_material]
+            local resource = ct.reinforcement_types[current_reinf_material]
+            local resource_limit = resource.value
 
             ct.register_reinforcement(pos, current_reinf_group.id,
                                       current_reinf_material, resource_limit)
@@ -403,8 +394,10 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          -- If we punch something with a reinforcement item
          local item_name = item:get_name()
          local item_desc = minetest.registered_items[item_name].description
-         local resource_limit = ct.resource_limits[item_name]
-         if resource_limit then
+         local resource = ct.reinforcement_types[item_name]
+
+         if resource then
+            local resource_limit = resource.value
             local reinf = ct.get_reinforcement(pos)
             if not reinf then
                -- Remove item from player's wielded stack
@@ -447,12 +440,13 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
             end
          end
 
+         local resource_limit = ct.reinforcement_types[reinf.material].value
          minetest.chat_send_player(
             pname,
             "Block (" .. vtos(pos) .. ") is reinforced" .. group_string
                .. " with " .. reinf_desc
                .. " (" .. tostring(reinf.value) .. "/"
-               .. tostring(ct.resource_limits[reinf.material]) .. ")."
+               .. tostring(resource_limit) .. ")."
          )
       elseif ct.player_modes[pname] == ct.PLAYER_MODE_CHANGE then
          local reinf = ct.get_reinforcement(pos)

@@ -19,6 +19,8 @@ local ie = minetest.request_insecure_environment() or
 
 loadfile(modpath .. "/db.lua")(ie)
 dofile(modpath .. "/cache.lua")
+dofile(modpath .. "/reinforcements.lua")
+dofile(modpath .. "/decay.lua")
 dofile(modpath .. "/citadella.lua")
 dofile(modpath .. "/hud.lua")
 dofile(modpath .. "/container.lua")

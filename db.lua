@@ -37,6 +37,7 @@ local function prep_db()
          value INTEGER NOT NULL,
          material VARCHAR(50) NOT NULL,
          ctgroup_id VARCHAR(32) REFERENCES ctgroup(id),
+         creation_date TIMESTAMP NOT NULL,
          PRIMARY KEY (x, y, z)
      )]]))
 end
@@ -57,7 +58,7 @@ local QUERY_REGISTER_REINFORCEMENT = [[
 ]]
 
 function ctdb.register_reinforcement(pos, ctgroup_id, item_name)
-   local value = ct.resource_limits[item_name]
+   local value = ct.reinforcement_types[item_name].value
    assert(u.prepare(db, QUERY_REGISTER_REINFORCEMENT,
                     pos.x, pos.y, pos.z,
                     value, item_name, ctgroup_id))

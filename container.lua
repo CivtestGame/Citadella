@@ -3,9 +3,10 @@ function ct.make_open_formspec(reinf, group, name, pos)
    local F = minetest.formspec_escape
    local chest_title = name or "Chest"
    if reinf then
+      local resource_limit = ct.reinforcement_types[reinf.material].value
       chest_title = "Locked " .. chest_title .. " (group: '" .. F(group.name) .. "', "
          .. tostring(reinf.material) .. ", " .. tostring(reinf.value) .. "/"
-         .. tostring(ct.resource_limits[reinf.material]) .. ")"
+         .. tostring(resource_limit) .. ")"
    end
 
    local spos = pos.x .. "," .. pos.y .. "," .. pos.z
