@@ -37,9 +37,16 @@ local function prep_db()
          value INTEGER NOT NULL,
          material VARCHAR(50) NOT NULL,
          ctgroup_id VARCHAR(32) REFERENCES ctgroup(id),
-         creation_date TIMESTAMP NOT NULL,
+         creation_date TIMESTAMP NOT NULL DEFAULT NOW(),
          PRIMARY KEY (x, y, z)
      )]]))
+
+   -- 2020-04-20: since I have to care about other people now :-)
+   assert(u.prepare(db, [[
+     ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
+          creation_date TIMESTAMP NOT NULL DEFAULT NOW()
+   ]]))
+
 end
 
 
