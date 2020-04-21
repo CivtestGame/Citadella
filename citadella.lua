@@ -571,6 +571,9 @@ function minetest.is_protected(pos, pname, action)
    end
 
    -- Decrement reinforcement
-   local remaining = ct.modify_reinforcement(pos, reinf.value - 1)
+   local remaining = ct.modify_reinforcement(
+      pos, reinf.value - ct.compute_break_value(pos, reinf)
+   )
+
    return remaining > 0 or is_protected_fn(pos, pname, action)
 end

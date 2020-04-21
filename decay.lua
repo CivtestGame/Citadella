@@ -72,3 +72,19 @@ function ct.try_catchup_reinforcement(pos, reinf)
          end
    end
 end
+
+function ct.compute_break_value(pos, reinf)
+   local break_value = 1
+
+   local time = os.time(os.date("!*t"))
+   local elapsed_from_creation = time - reinf.creation_date
+   local reinf_def = ct.reinforcement_types[reinf.material]
+
+   if elapsed_from_creation < reinf_def.warmup_time then
+      -- Breaking blocks during their warmup should be really punishing. 5x as
+      -- much damage seems good enough to me.
+      break_value = 5
+   end
+
+   return break_value
+end
