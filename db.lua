@@ -37,14 +37,19 @@ local function prep_db()
          value INTEGER NOT NULL,
          material VARCHAR(50) NOT NULL,
          ctgroup_id VARCHAR(32) REFERENCES ctgroup(id),
-         creation_date TIMESTAMP NOT NULL DEFAULT NOW(),
+         creation_date TIMESTAMP,
+         last_update TIMESTAMP,
          PRIMARY KEY (x, y, z)
      )]]))
 
    -- 2020-04-20: since I have to care about other people now :-)
    assert(u.prepare(db, [[
      ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
-          creation_date TIMESTAMP NOT NULL DEFAULT NOW()
+          creation_date TIMESTAMP
+   ]]))
+   assert(u.prepare(db, [[
+     ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
+          last_update TIMESTAMP
    ]]))
 
 end
@@ -60,15 +65,23 @@ minetest.register_on_shutdown(function()
 end)
 
 local QUERY_REGISTER_REINFORCEMENT = [[
-  INSERT INTO reinforcement (x, y, z, value, material, ctgroup_id)
-  VALUES (?, ?, ?, ?, ?, ?)
+  INSERT INTO reinforcement
+  (x, y, z, value, material, ctgroup_id, creation_date, last_update)
+  VALUES (
+    ?, ?, ?,
+    ?, ?, ?,
+    TO_TIMESTAMP(?) AT TIME ZONE 'UTC',
+    TO_TIMESTAMP(?) AT TIME ZONE 'UTC'
+  )
 ]]
 
-function ctdb.register_reinforcement(pos, ctgroup_id, item_name)
+function ctdb.register_reinforcement(pos, ctgroup_id, item_name,
+                                     last_update, creation_date)
    local value = ct.reinforcement_types[item_name].value
    assert(u.prepare(db, QUERY_REGISTER_REINFORCEMENT,
                     pos.x, pos.y, pos.z,
-                    value, item_name, ctgroup_id))
+                    value, item_name, ctgroup_id,
+                    last_update, creation_date))
 end
 
 local QUERY_UPDATE_REINFORCEMENT_GROUP = [[
@@ -117,7 +130,10 @@ function ctdb.get_reinforcement(pos)
 end
 
 local QUERY_GET_REINFORCEMENTS = [[
-  SELECT * FROM reinforcement
+  SELECT *,
+    FLOOR(EXTRACT(epoch FROM reinforcement.last_update)) AS last_update_unix,
+    FLOOR(EXTRACT(epoch FROM reinforcement.creation_date)) AS creation_date_unix
+  FROM reinforcement
   WHERE reinforcement.x BETWEEN ? AND ?
     AND reinforcement.y BETWEEN ? AND ?
     AND reinforcement.z BETWEEN ? AND ?
@@ -137,7 +153,9 @@ function ctdb.get_reinforcements_for_cache(cache, pos1, pos2)
          value = tonumber(row.value),
          material = row.material,
          ctgroup_id = row.ctgroup_id,
-         new = false
+         new = false,
+         last_update = tonumber(row.last_update_unix),
+         creation_date = tonumber(row.creation_date_unix),
       }
       row = cur:fetch(row, "a")
    end
@@ -149,14 +167,17 @@ end
 
 local QUERY_UPDATE_REINFORCEMENT = [[
   UPDATE reinforcement
-  SET value = ?
+  SET value = ?,
+      last_update = TO_TIMESTAMP(?) AT TIME ZONE 'UTC',
+      creation_date = TO_TIMESTAMP(?) AT TIME ZONE 'UTC'
   WHERE reinforcement.x = ?
     AND reinforcement.y = ?
     AND reinforcement.z = ?
 ]]
 
-function ctdb.update_reinforcement(pos, new_value)
+function ctdb.update_reinforcement(pos, new_value, last_update, creation_date)
    assert(u.prepare(db, QUERY_UPDATE_REINFORCEMENT, new_value,
+                    last_update, creation_date,
                     pos.x, pos.y, pos.z))
 end
 

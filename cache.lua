@@ -23,7 +23,7 @@ cache:
 local chunk_reinf_cache = {}
 local cache_chunk_expiry = 30 -- debug, can be set to 60+
 
-local function flush_reinf(reinf)
+function ct.flush_reinf(reinf)
    local reinf_value = reinf.value
    local x, y, z = reinf.x, reinf.y, reinf.z
    if reinf.new then
@@ -33,7 +33,9 @@ local function flush_reinf(reinf)
       ctdb.register_reinforcement(
          vector.new(x, y, z),
          reinf.ctgroup_id,
-         reinf.material
+         reinf.material,
+         reinf.last_update,
+         reinf.creation_date
       )
       reinf.new = false
    end
@@ -44,7 +46,9 @@ local function flush_reinf(reinf)
       -- minetest.chat_send_all("  Updated: (" .. ptos(x, y, z) .. ")")
       ctdb.update_reinforcement(
          vector.new(x, y, z),
-         reinf_value
+         reinf_value,
+         reinf.last_update,
+         reinf.creation_date
       )
    end
 end
@@ -56,7 +60,7 @@ function ct.try_flush_cache()
       if (chunk.time_added + cache_chunk_expiry) < current_time then
          minetest.log("verbose", "Flushing chunk (" .. key .. ") to db.")
          for _, reinf in pairs(chunk.reinforcements) do
-            flush_reinf(reinf)
+            ct.flush_reinf(reinf)
          end
          chunk_reinf_cache[key] = nil
       end
@@ -68,7 +72,7 @@ function ct.force_flush_cache()
    for key, chunk in pairs(chunk_reinf_cache) do
       minetest.log("verbose", "Force flushing chunk (" .. key .. ") to db.")
       for _, reinf in pairs(chunk.reinforcements) do
-         flush_reinf(reinf)
+         ct.flush_reinf(reinf)
       end
       chunk_reinf_cache[key] = nil
    end
@@ -95,7 +99,10 @@ function ct.get_reinforcement(pos)
    ct.chunk_ensure_cached(pos)
    local vchunk_start = get_pos_chunk(pos)
    local chunk_reinf = chunk_reinf_cache[vtos(vchunk_start)]
-   return chunk_reinf.reinforcements[vtos(pos)]
+   local reinf = chunk_reinf.reinforcements[vtos(pos)]
+   -- Apply warmup/decay to this reinforcement
+   ct.try_catchup_reinforcement(pos, reinf)
+   return reinf
 end
 
 
@@ -110,8 +117,10 @@ function ct.modify_reinforcement(pos, value)
       --
       -- If this isn't done, Citadella would reload the value from the DB, which
       -- is almost certainly not coherent with the current state of the cache.
-      chunk_reinf.reinforcements[vtos(pos)].value = 0
-      flush_reinf(chunk_reinf.reinforcements[vtos(pos)])
+      if chunk_reinf.reinforcements[vtos(pos)] then
+         chunk_reinf.reinforcements[vtos(pos)].value = 0
+         ct.flush_reinf(chunk_reinf.reinforcements[vtos(pos)])
+      end
 
       -- Once the cache has been flushed, this reinforcement entry is removed.
       chunk_reinf.reinforcements[vtos(pos)] = nil
@@ -125,12 +134,15 @@ end
 function ct.register_reinforcement(pos, ctgroup_id, item_name, resource_limit)
    local reinf = ct.get_reinforcement(pos)
    if not reinf then
+      local time = os.time(os.date("!*t"))
       local vchunk = get_pos_chunk(pos)
       chunk_reinf_cache[vtos(vchunk)].reinforcements[vtos(pos)] = {
          x = pos.x, y = pos.y, z = pos.z,
-         value = resource_limit,
+         value = 1,
          material = item_name,
          ctgroup_id = ctgroup_id,
+         last_update = time,
+         creation_date = time,
          new = true
       }
    end

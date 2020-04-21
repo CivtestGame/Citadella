@@ -73,22 +73,35 @@ ct.register_reinforcement_type({
 })
 
 -- Example
-ct.register_reinforcement_type({
-      name = "Stackable Reinforcement",
-      item_name = "citadella:reinforcement_stackable",
-      return_item = "citadella:reinforcement_stackable",
+-- ct.register_reinforcement_type({
+--       name = "Stackable Reinforcement",
+--       item_name = "citadella:reinforcement_stackable",
+--       return_item = "citadella:reinforcement_stackable",
 
-      -- Reinf adds 250 digs until the block is removed
-      value = 250,
-      -- Reinf decays to a value of 750
-      decay_to_value = 750,
-      -- Reinf can be stacked all the way to 2500
-      value_limit = 2500,
+--       -- Reinf adds 250 digs until the block is removed
+--       value = 250,
+--       -- Reinf decays to a value of 750
+--       decay_to_value = 750,
+--       -- Reinf can be stacked all the way to 2500
+--       value_limit = 2500,
 
-      -- Reinf only becomes useful after 24h
-      warmup_time = hours(24),
+--       -- Reinf only becomes useful after 24h
+--       warmup_time = hours(24),
 
-      -- Reinf begins decaying after 30 days in 3h intervals
-      decay_after_time = days(30),
-      decay_time_interval = hours(3),
-})
+--       -- Reinf begins decaying after 30 days in 3h intervals
+--       decay_after_time = days(30),
+--       decay_time_interval = hours(3),
+-- })
+
+-- Example
+-- ct.register_reinforcement_type({
+--       name = "Meme Reinforcement",
+--       item_name = "default:cobble",
+--       value = 10,
+
+--       -- warmup_time = minutes(2),
+
+--       decay_to_value = 0,
+--       decay_after_time = minutes(2),
+--       decay_time_interval = seconds(30)
+-- })
