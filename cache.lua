@@ -58,6 +58,7 @@ end
 
 function ct.try_flush_cache()
    local current_time = os.time(os.date("!*t"))
+   ctdb.begin_transaction()
    for key, chunk in pairs(chunk_reinf_cache) do
       if (chunk.time_added + cache_chunk_expiry) < current_time then
          minetest.log("verbose", "Flushing chunk (" .. key .. ") to db.")
@@ -67,10 +68,12 @@ function ct.try_flush_cache()
          chunk_reinf_cache[key] = nil
       end
    end
+   ctdb.end_transaction()
 end
 
 
 function ct.force_flush_cache()
+   ctdb.begin_transaction()
    for key, chunk in pairs(chunk_reinf_cache) do
       minetest.log("verbose", "Force flushing chunk (" .. key .. ") to db.")
       for _, reinf in pairs(chunk.reinforcements) do
@@ -78,6 +81,7 @@ function ct.force_flush_cache()
       end
       chunk_reinf_cache[key] = nil
    end
+   ctdb.end_transaction()
 end
 
 

@@ -191,4 +191,12 @@ function ctdb.update_reinforcement(pos, new_value, last_update,
                     pos.x, pos.y, pos.z))
 end
 
+function ctdb.begin_transaction()
+   assert(u.prepare(db, [[ BEGIN; ]]))
+end
+
+function ctdb.end_transaction()
+   assert(u.prepare(db, [[ COMMIT; ]]))
+end
+
 return db
