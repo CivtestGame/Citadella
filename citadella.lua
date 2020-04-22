@@ -205,8 +205,16 @@ minetest.register_chatcommand("ctm", {
          local valid_names, valid_descs = ct.get_valid_reinforcement_items()
          local cleaned = {}
          for i,name in ipairs(valid_names) do
-            local value_limit = ct.reinforcement_types[name].value
-            cleaned[i] = valid_descs[i] .. " (" .. value_limit .. ")"
+            local reinf_def = ct.reinforcement_types[name]
+            local value = reinf_def.value
+            local value_limit = reinf_def.value_limit
+
+            local val_string = tostring(reinf_def.value)
+            if value_limit > value then
+               val_string = "base: " .. value .. ", limit: " .. value_limit
+            end
+
+            cleaned[i] = valid_descs[i] .. " (" .. val_string .. ")"
          end
 
          minetest.chat_send_player(
