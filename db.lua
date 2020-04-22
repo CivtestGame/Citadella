@@ -39,6 +39,7 @@ local function prep_db()
          ctgroup_id VARCHAR(32) REFERENCES ctgroup(id),
          creation_date TIMESTAMP,
          last_update TIMESTAMP,
+         last_stacked TIMESTAMP,
          PRIMARY KEY (x, y, z)
      )]]))
 
@@ -50,6 +51,10 @@ local function prep_db()
    assert(u.prepare(db, [[
      ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
           last_update TIMESTAMP
+   ]]))
+   assert(u.prepare(db, [[
+     ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
+          last_stacked TIMESTAMP
    ]]))
 
 end
@@ -66,10 +71,11 @@ end)
 
 local QUERY_REGISTER_REINFORCEMENT = [[
   INSERT INTO reinforcement
-  (x, y, z, value, material, ctgroup_id, creation_date, last_update)
+  (x, y, z, value, material, ctgroup_id, creation_date, last_update, last_stacked)
   VALUES (
     ?, ?, ?,
     ?, ?, ?,
+    TO_TIMESTAMP(?) AT TIME ZONE 'UTC',
     TO_TIMESTAMP(?) AT TIME ZONE 'UTC',
     TO_TIMESTAMP(?) AT TIME ZONE 'UTC'
   )
@@ -81,7 +87,7 @@ function ctdb.register_reinforcement(pos, ctgroup_id, item_name,
    assert(u.prepare(db, QUERY_REGISTER_REINFORCEMENT,
                     pos.x, pos.y, pos.z,
                     value, item_name, ctgroup_id,
-                    last_update, creation_date))
+                    last_update, creation_date, creation_date))
 end
 
 local QUERY_UPDATE_REINFORCEMENT_GROUP = [[
@@ -132,7 +138,8 @@ end
 local QUERY_GET_REINFORCEMENTS = [[
   SELECT *,
     FLOOR(EXTRACT(epoch FROM reinforcement.last_update)) AS last_update_unix,
-    FLOOR(EXTRACT(epoch FROM reinforcement.creation_date)) AS creation_date_unix
+    FLOOR(EXTRACT(epoch FROM reinforcement.creation_date)) AS creation_date_unix,
+    FLOOR(EXTRACT(epoch FROM reinforcement.last_stacked)) AS last_stacked_unix
   FROM reinforcement
   WHERE reinforcement.x BETWEEN ? AND ?
     AND reinforcement.y BETWEEN ? AND ?
@@ -156,6 +163,7 @@ function ctdb.get_reinforcements_for_cache(cache, pos1, pos2)
          new = false,
          last_update = tonumber(row.last_update_unix),
          creation_date = tonumber(row.creation_date_unix),
+         last_stacked = tonumber(row.last_stacked_unix),
       }
       row = cur:fetch(row, "a")
    end
@@ -169,15 +177,17 @@ local QUERY_UPDATE_REINFORCEMENT = [[
   UPDATE reinforcement
   SET value = ?,
       last_update = TO_TIMESTAMP(?) AT TIME ZONE 'UTC',
-      creation_date = TO_TIMESTAMP(?) AT TIME ZONE 'UTC'
+      creation_date = TO_TIMESTAMP(?) AT TIME ZONE 'UTC',
+      last_stacked = TO_TIMESTAMP(?) AT TIME ZONE 'UTC'
   WHERE reinforcement.x = ?
     AND reinforcement.y = ?
     AND reinforcement.z = ?
 ]]
 
-function ctdb.update_reinforcement(pos, new_value, last_update, creation_date)
+function ctdb.update_reinforcement(pos, new_value, last_update,
+                                   creation_date, last_stacked)
    assert(u.prepare(db, QUERY_UPDATE_REINFORCEMENT, new_value,
-                    last_update, creation_date,
+                    last_update, creation_date, last_stacked,
                     pos.x, pos.y, pos.z))
 end
 

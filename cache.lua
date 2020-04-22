@@ -35,7 +35,8 @@ function ct.flush_reinf(reinf)
          reinf.ctgroup_id,
          reinf.material,
          reinf.last_update,
-         reinf.creation_date
+         reinf.creation_date,
+         reinf.last_stacked
       )
       reinf.new = false
    end
@@ -48,7 +49,8 @@ function ct.flush_reinf(reinf)
          vector.new(x, y, z),
          reinf_value,
          reinf.last_update,
-         reinf.creation_date
+         reinf.creation_date,
+         reinf.last_stacked
       )
    end
 end
@@ -143,6 +145,7 @@ function ct.register_reinforcement(pos, ctgroup_id, item_name, resource_limit)
          ctgroup_id = ctgroup_id,
          last_update = time,
          creation_date = time,
+         last_stacked = time,
          new = true
       }
    end

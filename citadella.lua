@@ -176,12 +176,13 @@ minetest.register_chatcommand("ctf", {
       local item_name = item:get_name()
       local item_description = item:get_definition().description
 
-      local is_valid_reinf_item = ct.reinforcement_types[item_name]
-      if is_valid_reinf_item then
+      local reinf_def = ct.reinforcement_types[item_name]
+      if reinf_def then
          ct.player_fortify_material[pname] = item_name
          set_parameterized_mode(pname, param, ct.PLAYER_MODE_FORTIFY)
          minetest.chat_send_player(
-            pname, "Fortify: " .. item_description .. "\n"
+            pname, "Fortify: " .. item_description
+               .. " (" .. reinf_def.value .. ")\n"
                .. ct.warmup_and_decay_info(item_name)
          )
          return true
@@ -452,6 +453,12 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
                   else
                      local new_value = math.min(reinf.value + reinf_def.value,
                                                 reinf_def.value_limit)
+
+                     -- Update the reinforcement's last_stacked time.
+                     -- Stacking a reinforcement resets its decay timer.
+                     local time = os.time(os.date("!*t"))
+                     reinf.last_stacked = time
+
                      ct.modify_reinforcement(pos, new_value)
 
                      minetest.chat_send_player(

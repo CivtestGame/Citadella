@@ -10,7 +10,10 @@ function ct.try_catchup_reinforcement(pos, reinf)
       return
    end
 
-   local creation_date = reinf.creation_date
+   local creation_date = math.max(
+      reinf.last_stacked or 0, reinf.creation_date
+   )
+
    local last_update = reinf.last_update
    if not creation_date or not last_update then
       -- This node predates the decay system. Ignore it for now.
@@ -75,14 +78,14 @@ end
 
 function ct.get_current_reinforcement_warmup(pos, reinf)
    local time = os.time(os.date("!*t"))
-   local elapsed_from_creation = time - reinf.creation_date
-   local reinf_def = ct.reinforcement_types[reinf.material]
-
+   local creation_time = math.max(reinf.creation_date, reinf.last_stacked or 0)
+   local elapsed_from_creation = time - creation_time
    return elapsed_from_creation
 end
 
 function ct.is_reinforcement_warming_up(pos, reinf)
    local elapsed_from_creation = ct.get_current_reinforcement_warmup(pos, reinf)
+   local reinf_def = ct.reinforcement_types[reinf.material]
    return elapsed_from_creation < reinf_def.warmup_time
 end
 
