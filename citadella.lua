@@ -2,6 +2,7 @@
 ct.PLAYER_MODE_REINFORCE = "reinforce"
 ct.PLAYER_MODE_FORTIFY = "fortify"
 ct.PLAYER_MODE_INFO = "info"
+ct.PLAYER_MODE_INFO_EXTRA = "extra info"
 ct.PLAYER_MODE_CHANGE = "change"
 
 -- Mapping of Player -> Citadel mode
@@ -13,7 +14,6 @@ ct.player_bypass = {}
 
 ct.player_current_reinf_group = {}
 ct.player_fortify_material = {}
-
 
 -- Implementation of a Citadella placement border.
 
@@ -180,6 +180,10 @@ minetest.register_chatcommand("ctf", {
       if is_valid_reinf_item then
          ct.player_fortify_material[pname] = item_name
          set_parameterized_mode(pname, param, ct.PLAYER_MODE_FORTIFY)
+         minetest.chat_send_player(
+            pname, "Fortify: " .. item_description .. "\n"
+               .. ct.warmup_and_decay_info(item_name)
+         )
          return true
       else
          local valid_names, valid_descs = ct.get_valid_reinforcement_items()
@@ -283,6 +287,18 @@ minetest.register_chatcommand("cti", {
    end
 })
 
+minetest.register_chatcommand("ctei", {
+   params = "",
+   description = "Citadella extra information mode.",
+   func = function(name, param)
+      if param ~= "" then
+         minetest.chat_send_player(name, "Error: Usage: /ctei")
+      else
+         set_simple_mode(name, ct.PLAYER_MODE_INFO_EXTRA)
+      end
+   end
+})
+
 -- XXX: documents say this isn't recommended, use node definition callbacks instead
 minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack, pointed_thing)
       local pname = placer:get_player_name()
@@ -309,21 +325,23 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
          local invlist = (inv:contains_item("main", required_item) and "main")
             or (inv:contains_item("main2", required_item) and "main2")
 
+         local desc = core.registered_items[current_reinf_material].description
+
          -- Ensure player has the required item to create the reinforcement
          if invlist then
-            local resource = ct.reinforcement_types[current_reinf_material]
-            local resource_limit = resource.value
+            local reinf_def = ct.reinforcement_types[current_reinf_material]
+            local reinf_def_value = reinf_def.value
+            local reinf_def_value_limit = reinf_def.value_limit
 
             ct.register_reinforcement(pos, current_reinf_group.id,
-                                      current_reinf_material, resource_limit)
-
-            local desc = core.registered_items[current_reinf_material].description
+                                      current_reinf_material, reinf_def_value)
 
             minetest.chat_send_player(
                pname,
                "Reinforced placed block (" .. vtos(pos) .. ") with "
-                  .. desc .. " (" .. tostring(resource_limit)
-                  .. ") (group: '" .. current_reinf_group.name .. "')."
+                  .. desc .. " (" .. tostring(reinf_def_value) .. "/"
+                  .. tostring(reinf_def_value_limit)
+                  .. ") on group " .. current_reinf_group.name .. "."
             )
 
             -- Edge case when fortifying stone with stone: remove_item doesn't
@@ -336,7 +354,8 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
          else
             minetest.chat_send_player(
                pname,
-               "Inventory has no more " .. current_reinf_material .. "."
+               "Inventory has no more " .. desc .. " for reinforcement. "
+                  .. "Fortify mode turned off."
             )
             set_simple_mode(pname, nil)
          end
@@ -394,10 +413,11 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          -- If we punch something with a reinforcement item
          local item_name = item:get_name()
          local item_desc = minetest.registered_items[item_name].description
-         local resource = ct.reinforcement_types[item_name]
+         local reinf_def = ct.reinforcement_types[item_name]
 
-         if resource then
-            local resource_limit = resource.value
+         if reinf_def then
+            local reinf_def_value = reinf_def.value
+            local reinf_def_value_limit = reinf_def.value
             local reinf = ct.get_reinforcement(pos)
             if not reinf then
                -- Remove item from player's wielded stack
@@ -405,28 +425,60 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
                puncher:set_wielded_item(item)
                -- Set node's reinforcement value to the default for this material
                ct.register_reinforcement(
-                  pos, current_reinf_group.id, item_name, resource_limit
+                  pos, current_reinf_group.id, item_name, reinf_def_value
                )
                minetest.chat_send_player(
                   pname,
                   "Reinforced block ("..vtos(pos)..") with " .. item_desc ..
-                     " (" .. tostring(resource_limit) .. ") on group " ..
+                     " (" .. tostring(reinf_def_value) .. "/"
+                     .. reinf_def_value_limit .. ") on group " ..
                      current_reinf_group.name .. "."
                )
             else
                local reinf_desc
                   = minetest.registered_items[reinf.material].description
-               minetest.chat_send_player(
-                  pname, "Block is already reinforced with " .. reinf_desc
-                     .. " (" .. tostring(reinf.value) .. ")"
-               )
+
+               if reinf_def.value_limit > reinf.value
+                  and item_name == reinf.material
+               then
+                  -- Stackable reinforcement: if it's warming up, deny the
+                  -- attempt, otherwise add the value of the material to the
+                  -- existing reinforcement.
+                  if ct.is_reinforcement_warming_up(pos, reinf) then
+                     minetest.chat_send_player(
+                        pname, "You cannot stack reinforcements on blocks "
+                           .. "that are still warming up."
+                     )
+                  else
+                     local new_value = math.min(reinf.value + reinf_def.value,
+                                                reinf_def.value_limit)
+                     ct.modify_reinforcement(pos, new_value)
+
+                     minetest.chat_send_player(
+                        pname, "Block was further reinforced with "
+                           .. reinf_desc .. " by "
+                           .. reinf_def.value .. " to " .. new_value .. "/"
+                           .. reinf_def.value_limit .. "."
+                     )
+                  end
+               else
+                  minetest.chat_send_player(
+                     pname, "Block is already reinforced with " .. reinf_desc
+                        .. " (" .. tostring(reinf.value) .. ") and cannot "
+                        .. "be stacked further."
+                  )
+               end
+
             end
          end
-      elseif ct.player_modes[pname] == ct.PLAYER_MODE_INFO then
+      elseif ct.player_modes[pname] == ct.PLAYER_MODE_INFO
+         or ct.player_modes[pname] == ct.PLAYER_MODE_INFO_EXTRA
+      then
          local reinf = ct.get_reinforcement(pos)
          if not reinf then
             return
          end
+
          local reinf_desc
             = minetest.registered_items[reinf.material].description
 
@@ -440,13 +492,20 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
             end
          end
 
-         local resource_limit = ct.reinforcement_types[reinf.material].value
+         local verbose_info = ""
+         if ct.player_modes[pname] == ct.PLAYER_MODE_INFO_EXTRA then
+            verbose_info
+               = "\n" .. ct.warmup_and_decay_info(reinf.material, reinf, pos)
+         end
+
+         local reinf_def = ct.reinforcement_types[reinf.material]
          minetest.chat_send_player(
             pname,
             "Block (" .. vtos(pos) .. ") is reinforced" .. group_string
                .. " with " .. reinf_desc
                .. " (" .. tostring(reinf.value) .. "/"
-               .. tostring(resource_limit) .. ")."
+               .. tostring(reinf_def.value_limit) .. ")."
+               .. verbose_info
          )
       elseif ct.player_modes[pname] == ct.PLAYER_MODE_CHANGE then
          local reinf = ct.get_reinforcement(pos)
@@ -534,7 +593,9 @@ function minetest.is_protected(pos, pname, action)
 
    if ct.player_bypass[pname] then
       if ct.can_player_access_reinf(pname, reinf) then
-         local refund_item_name = reinf.material
+         local reinf_def = ct.reinforcement_types[reinf.material]
+         local refund_item_name = reinf_def.return_item
+         local refund_item_desc = reinf_def.name
          local refund_item = ItemStack({
                name = refund_item_name,
                count = 1
@@ -548,20 +609,21 @@ function minetest.is_protected(pos, pname, action)
             inv:add_item("main", refund_item)
             minetest.chat_send_player(
                pname,
-               refund_item_name .. " refunded from bypassed reinforcement."
+               refund_item_desc .. " refunded from bypassed reinforcement."
             )
          elseif inv:room_for_item("main2", refund_item) then
             inv:add_item("main2", refund_item)
             minetest.chat_send_player(
                pname,
-               refund_item_name .. " refunded from bypassed reinforcement."
+               refund_item_desc .. " refunded from bypassed reinforcement."
             )
          else
             minetest.chat_send_player(
                pname,
                "Warning: no inventory space for refunded reinforcement "
-                  .. "material" .. refund_item_name
+                  .. "material " .. refund_item_desc .. "."
             )
+            minetest.add_item(player:get_pos(), refund_item)
          end
 
          return is_protected_fn(pos, pname, action)
