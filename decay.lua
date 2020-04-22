@@ -10,9 +10,10 @@ function ct.try_catchup_reinforcement(pos, reinf)
       return
    end
 
-   local creation_date = math.max(
-      reinf.last_stacked or 0, reinf.creation_date
-   )
+   local creation_date
+   if reinf.last_stacked or reinf.creation_date then
+      creation_date = math.max(reinf.last_stacked or 0, reinf.creation_date or 0)
+   end
 
    local last_update = reinf.last_update
    if not creation_date or not last_update then
@@ -78,7 +79,16 @@ end
 
 function ct.get_current_reinforcement_warmup(pos, reinf)
    local time = os.time(os.date("!*t"))
-   local creation_time = math.max(reinf.creation_date, reinf.last_stacked or 0)
+
+   local creation_time
+   if reinf.creation_date or reinf.last_stacked then
+      creation_time = math.max(
+         reinf.creation_date or 0, reinf.last_stacked or 0
+      )
+   else
+      return
+   end
+
    local elapsed_from_creation = time - creation_time
    return elapsed_from_creation
 end
@@ -86,7 +96,9 @@ end
 function ct.is_reinforcement_warming_up(pos, reinf)
    local elapsed_from_creation = ct.get_current_reinforcement_warmup(pos, reinf)
    local reinf_def = ct.reinforcement_types[reinf.material]
-   return elapsed_from_creation < reinf_def.warmup_time
+
+   return elapsed_from_creation
+      and elapsed_from_creation < reinf_def.warmup_time
 end
 
 function ct.compute_break_value(pos, reinf)
