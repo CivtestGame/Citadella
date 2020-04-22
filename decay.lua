@@ -10,12 +10,9 @@ function ct.try_catchup_reinforcement(pos, reinf)
       return
    end
 
-   local creation_date
-   if reinf.last_stacked or reinf.creation_date then
-      creation_date = math.max(reinf.last_stacked or 0, reinf.creation_date or 0)
-   end
-
+   local creation_date = reinf.creation_date
    local last_update = reinf.last_update
+   local last_stacked = reinf.last_stacked or creation_date
    if not creation_date or not last_update then
       -- This node predates the decay system. Ignore it for now.
       return
@@ -34,6 +31,7 @@ function ct.try_catchup_reinforcement(pos, reinf)
 
    local elapsed_from_creation = time - creation_date
    local elapsed_from_last_update = time - last_update
+   local elapsed_from_last_stacked = time - last_stacked
 
    local warmup_time = reinf_def.warmup_time
    local decay_after_time = reinf_def.decay_after_time
@@ -45,7 +43,7 @@ function ct.try_catchup_reinforcement(pos, reinf)
       reinf.last_update = time
       ct.modify_reinforcement(pos, reinf_def.value)
 
-   elseif elapsed_from_creation > decay_after_time
+   elseif elapsed_from_last_stacked > decay_after_time
       and reinf_value > reinf_def.decay_to_value
    then
       -- Handle reinf decay. Nothing special here: compute decay since
@@ -60,10 +58,13 @@ function ct.try_catchup_reinforcement(pos, reinf)
          )
       end
 
-   elseif elapsed_from_creation < warmup_time
-      and reinf_value < reinf_def.value then
-         -- Here the reinf is warming up, or has warmed up. We calculate the
-         -- warmup interval based on warmup time (which is always non-zero here).
+   elseif reinf_value < reinf_def.value then
+      -- Here the reinf is warming up, or has warmed up. We calculate the
+      -- warmup interval based on warmup time (which is always non-zero here).
+      if elapsed_from_creation < warmup_time
+         or (elapsed_from_creation > warmup_time
+                and elapsed_from_last_update < warmup_time)
+      then
          local warmup_val = compute_decay(
             time, last_update, warmup_time / reinf_def.value
          )
@@ -74,19 +75,26 @@ function ct.try_catchup_reinforcement(pos, reinf)
                pos, math.min(reinf_value + warmup_val, reinf_def.value)
             )
          end
+      end
    end
+end
+
+function ct.get_current_reinforcement_decay(pos, reinf)
+   local time = os.time(os.date("!*t"))
+   local last_stacked = reinf.last_stacked
+   if not last_stacked then
+      return nil
+   end
+
+   local elapsed_from_last_stacked = time - last_stacked
+   return elapsed_from_last_stacked
 end
 
 function ct.get_current_reinforcement_warmup(pos, reinf)
    local time = os.time(os.date("!*t"))
-
-   local creation_time
-   if reinf.creation_date or reinf.last_stacked then
-      creation_time = math.max(
-         reinf.creation_date or 0, reinf.last_stacked or 0
-      )
-   else
-      return
+   local creation_time = reinf.creation_date
+   if not creation_time then
+      return nil
    end
 
    local elapsed_from_creation = time - creation_time
@@ -178,7 +186,7 @@ function ct.warmup_and_decay_info(material, reinf, pos)
       and reinf_def.decay_time_interval ~= 999999999999
    then
       if reinf then
-         local elapsed = ct.get_current_reinforcement_warmup(pos, reinf)
+         local elapsed = ct.get_current_reinforcement_decay(pos, reinf)
 
          if elapsed > reinf_def.decay_after_time then
             info[#info + 1] = "It has started decaying after "
