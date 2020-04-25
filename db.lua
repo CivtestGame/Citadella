@@ -43,19 +43,41 @@ local function prep_db()
          PRIMARY KEY (x, y, z)
      )]]))
 
+   local luatime = os.time(os.date("!*t"))
+
    -- 2020-04-20: since I have to care about other people now :-)
    assert(u.prepare(db, [[
      ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
-          creation_date TIMESTAMP
-   ]]))
+          creation_date TIMESTAMP;
+
+     UPDATE reinforcement
+       SET creation_date = (TO_TIMESTAMP(?) AT TIME ZONE 'UTC')
+       WHERE (SELECT TRUE FROM reinforcement
+                WHERE creation_date IS NULL LIMIT 1)
+         AND creation_date IS NULL;
+   ]], luatime))
+
    assert(u.prepare(db, [[
      ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
-          last_update TIMESTAMP
-   ]]))
+          last_update TIMESTAMP;
+
+     UPDATE reinforcement
+       SET last_update = (TO_TIMESTAMP(?) AT TIME ZONE 'UTC')
+       WHERE (SELECT TRUE FROM reinforcement
+                WHERE last_update IS NULL LIMIT 1)
+         AND last_update IS NULL;
+   ]], luatime))
+
    assert(u.prepare(db, [[
      ALTER TABLE reinforcement ADD COLUMN IF NOT EXISTS
-          last_stacked TIMESTAMP
-   ]]))
+          last_stacked TIMESTAMP;
+
+     UPDATE reinforcement
+       SET last_stacked = (TO_TIMESTAMP(?) AT TIME ZONE 'UTC')
+       WHERE (SELECT TRUE FROM reinforcement
+                WHERE last_stacked IS NULL LIMIT 1)
+         AND last_stacked IS NULL;
+   ]], luatime))
 
 end
 

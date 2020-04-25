@@ -111,8 +111,7 @@ function ct.get_reinforcement(pos)
    return reinf
 end
 
-
-function ct.modify_reinforcement(pos, value)
+function ct.modify_reinforcement(pos, value, last_update)
    ct.try_flush_cache()
    ct.chunk_ensure_cached(pos)
    local vchunk_start = get_pos_chunk(pos)
@@ -130,12 +129,14 @@ function ct.modify_reinforcement(pos, value)
 
       -- Once the cache has been flushed, this reinforcement entry is removed.
       chunk_reinf.reinforcements[vtos(pos)] = nil
-   else
+   elseif chunk_reinf.reinforcements[vtos(pos)] then
       chunk_reinf.reinforcements[vtos(pos)].value = value
+      if last_update then
+         chunk_reinf.reinforcements[vtos(pos)].last_update = last_update
+      end
    end
    return value
 end
-
 
 function ct.register_reinforcement(pos, ctgroup_id, item_name, resource_limit)
    local reinf = ct.get_reinforcement(pos)

@@ -39,7 +39,7 @@ function ct.register_reinforcement_type(def)
 
    -- Decay after X seconds, every Y seconds. Default both to a long time away.
    def.decay_after_time = def.decay_after_time or 999999999999
-   def.decay_time_interval = def.decay_time_interval or 999999999999
+   def.decay_length = def.decay_length or 999999999999
 
    ct.reinforcement_types[def.item_name] = def
 end
