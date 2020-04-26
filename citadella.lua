@@ -174,14 +174,18 @@ minetest.register_chatcommand("ctf", {
       local pname = player:get_player_name()
       local item = player:get_wielded_item()
       local item_name = item:get_name()
-      local item_description = item:get_definition().description
 
       local reinf_def = ct.reinforcement_types[item_name]
+      local item_desc = reinf_def.name
       if reinf_def then
+         if reinf_def.disabled then
+            return false, "Reinforcement with " .. item_desc .. " is disabled."
+         end
+
          ct.player_fortify_material[pname] = item_name
          set_parameterized_mode(pname, param, ct.PLAYER_MODE_FORTIFY)
          minetest.chat_send_player(
-            pname, "Fortify: " .. item_description
+            pname, "Fortify: " .. item_desc
                .. " (" .. reinf_def.value .. ")\n"
                .. ct.warmup_and_decay_info(item_name)
          )
@@ -190,7 +194,7 @@ minetest.register_chatcommand("ctf", {
          local valid_names, valid_descs = ct.get_valid_reinforcement_items()
          minetest.chat_send_player(
             pname,
-            "Error: " .. item_description .. " is not a valid reinforcement"
+            "Error: " .. item_desc .. " is not a valid reinforcement"
                .. " material (" .. table.concat(valid_descs, ", ") .. ")."
          )
          return false
@@ -206,15 +210,17 @@ minetest.register_chatcommand("ctm", {
          local cleaned = {}
          for i,name in ipairs(valid_names) do
             local reinf_def = ct.reinforcement_types[name]
-            local value = reinf_def.value
-            local value_limit = reinf_def.value_limit
+            if not reinf_def.disabled then
+               local value = reinf_def.value
+               local value_limit = reinf_def.value_limit
 
-            local val_string = tostring(reinf_def.value)
-            if value_limit > value then
-               val_string = "base: " .. value .. ", limit: " .. value_limit
+               local val_string = tostring(reinf_def.value)
+               if value_limit > value then
+                  val_string = "base: " .. value .. ", limit: " .. value_limit
+               end
+
+               cleaned[i] = valid_descs[i] .. " (" .. val_string .. ")"
             end
-
-            cleaned[i] = valid_descs[i] .. " (" .. val_string .. ")"
          end
 
          minetest.chat_send_player(
@@ -424,66 +430,74 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
          local item_desc = minetest.registered_items[item_name].description
          local reinf_def = ct.reinforcement_types[item_name]
 
-         if reinf_def then
-            local reinf_def_value = reinf_def.value
-            local reinf_def_value_limit = reinf_def.value
-            local reinf = ct.get_reinforcement(pos)
-            if not reinf then
-               -- Remove item from player's wielded stack
-               item:take_item()
-               puncher:set_wielded_item(item)
-               -- Set node's reinforcement value to the default for this material
-               ct.register_reinforcement(
-                  pos, current_reinf_group.id, item_name, reinf_def_value
-               )
-               minetest.chat_send_player(
-                  pname,
-                  "Reinforced block ("..vtos(pos)..") with " .. item_desc ..
-                     " (" .. tostring(reinf_def_value) .. "/"
-                     .. reinf_def_value_limit .. ") on group " ..
-                     current_reinf_group.name .. "."
-               )
-            else
-               local reinf_desc
-                  = minetest.registered_items[reinf.material].description
+         if not reinf_def then
+            return
+         end
 
-               if reinf_def.value_limit > reinf.value
-                  and item_name == reinf.material
-               then
-                  -- Stackable reinforcement: if it's warming up, deny the
-                  -- attempt, otherwise add the value of the material to the
-                  -- existing reinforcement.
-                  if ct.is_reinforcement_warming_up(pos, reinf) then
-                     minetest.chat_send_player(
-                        pname, "You cannot stack reinforcements on blocks "
-                           .. "that are still warming up."
-                     )
-                  else
-                     local new_value = math.min(reinf.value + reinf_def.value,
-                                                reinf_def.value_limit)
+         if reinf_def.disabled then
+            minetest.chat_send_player(
+               pname, "Reinforcement with " .. item_desc .. " is disabled. "
+            )
+            return
+         end
 
-                     -- Update the reinforcement's last_stacked time.
-                     -- Stacking a reinforcement resets its decay timer.
-                     local time = os.time(os.date("!*t"))
-                     reinf.last_stacked = time
+         local reinf_def_value = reinf_def.value
+         local reinf_def_value_limit = reinf_def.value
+         local reinf = ct.get_reinforcement(pos)
+         if not reinf then
+            -- Remove item from player's wielded stack
+            item:take_item()
+            puncher:set_wielded_item(item)
+            -- Set node's reinforcement value to the default for this material
+            ct.register_reinforcement(
+               pos, current_reinf_group.id, item_name, reinf_def_value
+            )
+            minetest.chat_send_player(
+               pname,
+               "Reinforced block ("..vtos(pos)..") with " .. item_desc ..
+                  " (" .. tostring(reinf_def_value) .. "/"
+                  .. reinf_def_value_limit .. ") on group " ..
+                  current_reinf_group.name .. "."
+            )
+         else
+            local reinf_desc
+               = minetest.registered_items[reinf.material].description
 
-                     ct.modify_reinforcement(pos, new_value)
-
-                     minetest.chat_send_player(
-                        pname, "Block was further reinforced with "
-                           .. reinf_desc .. " by "
-                           .. reinf_def.value .. " to " .. new_value .. "/"
-                           .. reinf_def.value_limit .. "."
-                     )
-                  end
-               else
+            if reinf_def.value_limit > reinf.value
+               and item_name == reinf.material
+            then
+               -- Stackable reinforcement: if it's warming up, deny the
+               -- attempt, otherwise add the value of the material to the
+               -- existing reinforcement.
+               if ct.is_reinforcement_warming_up(pos, reinf) then
                   minetest.chat_send_player(
-                     pname, "Block is already reinforced with " .. reinf_desc
-                        .. " (" .. tostring(reinf.value) .. ") and cannot "
-                        .. "be stacked further."
+                     pname, "You cannot stack reinforcements on blocks "
+                        .. "that are still warming up."
+                  )
+               else
+                  local new_value = math.min(reinf.value + reinf_def.value,
+                                             reinf_def.value_limit)
+
+                  -- Update the reinforcement's last_stacked time.
+                  -- Stacking a reinforcement resets its decay timer.
+                  local time = os.time(os.date("!*t"))
+                  reinf.last_stacked = time
+
+                  ct.modify_reinforcement(pos, new_value)
+
+                  minetest.chat_send_player(
+                     pname, "Block was further reinforced with "
+                        .. reinf_desc .. " by "
+                        .. reinf_def.value .. " to " .. new_value .. "/"
+                        .. reinf_def.value_limit .. "."
                   )
                end
-
+            else
+               minetest.chat_send_player(
+                  pname, "Block is already reinforced with " .. reinf_desc
+                     .. " (" .. tostring(reinf.value) .. ") and cannot "
+                     .. "be stacked further."
+               )
             end
          end
       elseif ct.player_modes[pname] == ct.PLAYER_MODE_INFO

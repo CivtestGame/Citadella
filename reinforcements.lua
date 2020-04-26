@@ -15,6 +15,9 @@ function ct.register_reinforcement_type(def)
    -- The item returned by /ctb. Default to the same item used to reinforce.
    def.return_item = def.return_item or def.item_name
 
+   -- Is this reinforcement disabled?
+   def.disabled = def.disabled or false
+
    -- Grab a description of the reinforcement from somewhere.
    def.name = def.name
       or minetest.registered_items[def.item_name].description
