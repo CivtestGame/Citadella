@@ -216,10 +216,10 @@ minetest.register_chatcommand("ctm", {
 
                local val_string = tostring(reinf_def.value)
                if value_limit > value then
-                  val_string = "base: " .. value .. ", limit: " .. value_limit
+                  val_string = value .. "-->" .. value_limit
                end
 
-               cleaned[i] = valid_descs[i] .. " (" .. val_string .. ")"
+               cleaned[#cleaned + 1] = valid_descs[i] .. " (" .. val_string .. ")"
             end
          end
 

@@ -143,12 +143,10 @@ end
 --------------------------------------------------------------------------------
 
 local function growth_timescale(time)
-   -- Duplicated from civtest_game/mods/farming/api.lua
+   -- Somewhat duplicated from civtest_game/mods/farming/api.lua
    local divisor = 1
    local unit = "seconds"
-   local over_three_months = false
-   if time > (60 * 60 * 24 * 7 * 4 * 3) then
-      over_three_months = true
+   if time > (60 * 60 * 24 * 7 * 4) then
       divisor = (60 * 60 * 24 * 7 * 4)
       unit =  "months"
    elseif time > (60 * 60 * 24 * 7) then
@@ -164,16 +162,12 @@ local function growth_timescale(time)
       divisor = 60
       unit = "minutes"
    end
-   return divisor, unit, over_three_months
+   return divisor, unit
 end
 
 local function pretty_timescale(time)
-   local divisor, unit, over_three_months = growth_timescale(time)
-   if over_three_months then
-      return over_three_months
-   else
-      return math.ceil(time / divisor) .. " " .. unit
-   end
+   local divisor, unit = growth_timescale(time)
+   return math.ceil(time / divisor) .. " " .. unit
 end
 
 function ct.warmup_and_decay_info(material, reinf, pos)
