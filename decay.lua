@@ -81,19 +81,23 @@ function ct.try_catchup_reinforcement(pos, reinf)
    end
 end
 
--- -- FIXME: inaccurate reporting of decay completion percentage
--- function ct.get_current_reinforcement_postdecay(pos, reinf)
---    local time = os.time(os.date("!*t"))
---    local reinf_def = ct.reinforcement_types[reinf.material]
---    local decay_after_time = reinf_def.decay_after_time
---    local last_stacked = reinf.last_stacked + decay_after_time
---    if not last_stacked then
---       return nil
---    end
+function ct.get_current_reinforcement_postdecay(pos, reinf)
+   local time = os.time(os.date("!*t"))
+   local reinf_def = ct.reinforcement_types[reinf.material]
+   local decay_after_time = reinf_def.decay_after_time
+   local creation_date = reinf.creation_date
+   local last_stacked = reinf.last_stacked or creation_date
 
---    local elapsed_from_last_stacked = time - last_stacked
---    return elapsed_from_last_stacked
--- end
+   if not creation_date then
+      return nil
+   end
+
+   local decay_time = last_stacked + decay_after_time
+
+   local elapsed_since_decay = time - decay_time
+
+   return elapsed_since_decay
+end
 
 function ct.get_current_reinforcement_predecay(pos, reinf)
    local time = os.time(os.date("!*t"))
@@ -210,19 +214,20 @@ function ct.warmup_and_decay_info(material, reinf, pos)
 
          if elapsed_pre > reinf_def.decay_after_time then
 
-            -- -- FIXME: inaccurate reporting of decay completion percentage
-            -- local since = ct.get_current_reinforcement_postdecay(pos, reinf)
-
-            -- local decay_pct = math.floor(
-            --    math.min(1, since / reinf_def.decay_length) * 100
-            -- )
+            -- There's a minor bug here if /ctei is repeatedly used. It seems
+            -- that the reported reinforcement drifts from this percentage. Not
+            -- entirely sure why...
+            local since = ct.get_current_reinforcement_postdecay(pos, reinf)
+            local decay_pct = math.floor(
+               math.min(1, since / reinf_def.decay_length) * 100
+            )
 
             info[#info + 1] = "Decay began after "
                .. pretty_timescale(reinf_def.decay_after_time) .. ".\n"
                .. "It will decay over "
                .. pretty_timescale(reinf_def.decay_length) .. " "
-               .. "down to a value of " .. reinf_def.decay_to_value .. "."
-               -- .. "(" .. decay_pct .. "% decayed)."
+               .. "down to a value of " .. reinf_def.decay_to_value .. ".\n"
+               .. "It is " .. decay_pct .. "% decayed."
          else
             local elapsed_pct = math.floor(
                math.min(1, elapsed_pre / reinf_def.decay_after_time) * 100
