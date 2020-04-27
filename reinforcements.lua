@@ -28,8 +28,8 @@ function ct.register_reinforcement_type(def)
       or error("ct.register_reinforcement_type: definition for "
                   .. def.item_name .." has no 'value' property.")
 
-   -- Reinf warmup defaults to zero
-   def.warmup_time = def.warmup_time or 0
+   -- Reinf warmup defaults to one
+   def.warmup_time = def.warmup_time or 1
 
    -- Used in stacking reinfs: if value_limit is higher than value, the reinf
    -- can be stacked up to value_limit.
