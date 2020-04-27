@@ -176,7 +176,9 @@ minetest.register_chatcommand("ctf", {
       local item_name = item:get_name()
 
       local reinf_def = ct.reinforcement_types[item_name]
-      local item_desc = reinf_def.name
+      local item_desc = (reinf_def and reinf_def.name)
+         or item:get_definition().description
+
       if reinf_def then
          if reinf_def.disabled then
             return false, "Reinforcement with " .. item_desc .. " is disabled."
