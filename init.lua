@@ -26,5 +26,6 @@ dofile(modpath .. "/hud.lua")
 dofile(modpath .. "/container.lua")
 dofile(modpath .. "/chest.lua")
 dofile(modpath .. "/furnace.lua")
+dofile(modpath .. "/crafting.lua")
 
 return ct
