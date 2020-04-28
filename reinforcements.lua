@@ -283,7 +283,7 @@ ct.register_reinforcement_type({
 
       decay_to_value = 10,
       decay_after_time = weeks(2),
-      decay_after_time = weeks(1),
+      decay_length = weeks(1),
 })
 
 -- Stainless Steel Rebar
