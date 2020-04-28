@@ -321,7 +321,7 @@ ct.register_reinforcement_type({
       item_name = "citadella:reinf_plating_alubronze",
       value = 200,
 
-      decay_to_value = 100,
+      decay_to_value = 10,
       decay_after_time = weeks(1),
       decay_length = days(3)
 })
