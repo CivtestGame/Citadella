@@ -38,8 +38,11 @@ function ct.try_catchup_reinforcement(pos, reinf)
 
    local reinf_value = reinf.value
 
-   if warmup_time == 0 then
-      -- No warmup time specified, instantly warm-up the reinforcement.
+   if warmup_time == 1
+      and elapsed_from_creation == elapsed_from_last_update
+   then
+      -- This is triggered at the first update of an instant-warmup reinf.
+      -- No warmup time is specified, so instantly warm-up the reinforcement.
       ct.modify_reinforcement(pos, reinf_def.value, time)
 
    elseif elapsed_from_last_stacked > decay_after_time

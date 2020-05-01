@@ -125,10 +125,9 @@ function ct.modify_reinforcement(pos, value, last_update)
       if chunk_reinf.reinforcements[vtos(pos)] then
          chunk_reinf.reinforcements[vtos(pos)].value = 0
          ct.flush_reinf(chunk_reinf.reinforcements[vtos(pos)])
+         -- Once the cache has been flushed, this reinforcement entry is removed.
+         chunk_reinf.reinforcements[vtos(pos)] = nil
       end
-
-      -- Once the cache has been flushed, this reinforcement entry is removed.
-      chunk_reinf.reinforcements[vtos(pos)] = nil
    elseif chunk_reinf.reinforcements[vtos(pos)] then
       chunk_reinf.reinforcements[vtos(pos)].value = value
       if last_update then
