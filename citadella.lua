@@ -485,6 +485,10 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
                   local time = os.time(os.date("!*t"))
                   reinf.last_stacked = time
 
+                  -- Remove item from player's wielded stack
+                  item:take_item()
+                  puncher:set_wielded_item(item)
+
                   ct.modify_reinforcement(pos, new_value)
 
                   minetest.chat_send_player(
