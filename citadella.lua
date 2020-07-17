@@ -353,10 +353,15 @@ minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack
             ct.register_reinforcement(pos, current_reinf_group.id,
                                       current_reinf_material, reinf_def_value)
 
+            local initial_value_str = tostring(reinf_def_value)
+            if reinf_def.warmup_time > 1 then
+               initial_value_str = "1-->" .. initial_value_str
+            end
+
             minetest.chat_send_player(
                pname,
                "Reinforced placed block (" .. vtos(pos) .. ") with "
-                  .. desc .. " (" .. tostring(reinf_def_value) .. "/"
+                  .. desc .. " (" .. initial_value_str .. "/"
                   .. tostring(reinf_def_value_limit)
                   .. ") on group " .. current_reinf_group.name .. "."
             )
@@ -454,12 +459,20 @@ minetest.register_on_punchnode(function(pos, node, puncher, pointed_thing)
             ct.register_reinforcement(
                pos, current_reinf_group.id, item_name, reinf_def_value
             )
+
+            local warmup_info = ct.warmup_desc(reinf_def)
+
+            local initial_value_str = tostring(reinf_def_value)
+            if reinf_def.warmup_time > 1 then
+               initial_value_str = "1-->" .. initial_value_str
+            end
+
             minetest.chat_send_player(
                pname,
-               "Reinforced block ("..vtos(pos)..") with " .. item_desc ..
-                  " (" .. tostring(reinf_def_value) .. "/"
-                  .. reinf_def_value_limit .. ") on group " ..
-                  current_reinf_group.name .. "."
+               "Reinforced block ("..vtos(pos)..") with " .. item_desc
+                  .. " (" .. initial_value_str .. "/"
+                  .. reinf_def_value_limit .. ")" .. " on group "
+                  .. current_reinf_group.name .. ". " .. warmup_info
             )
          else
             local reinf_desc

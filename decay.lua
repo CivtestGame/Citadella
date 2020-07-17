@@ -148,23 +148,28 @@ end
 local function growth_timescale(time)
    -- Somewhat duplicated from civtest_game/mods/farming/api.lua
    local divisor = 1
-   local unit = "seconds"
+   local unit = "second"
    if time > (60 * 60 * 24 * 7 * 4) then
       divisor = (60 * 60 * 24 * 7 * 4)
-      unit =  "months"
+      unit = "month"
    elseif time > (60 * 60 * 24 * 7) then
       divisor = (60 * 60 * 24 * 7)
-      unit = "weeks"
+      unit = "week"
    elseif time > (60 * 60 * 24) then
       divisor = (60 * 60 * 24)
-      unit = "days"
+      unit = "day"
    elseif time > (60 * 60) then
       divisor = (60 * 60)
-      unit = "hours"
+      unit = "hour"
    elseif time > 60 then
       divisor = 60
-      unit = "minutes"
+      unit = "minute"
    end
+
+   if divisor > 1 then
+      unit = unit .. "s"
+   end
+
    return divisor, unit
 end
 
@@ -173,25 +178,36 @@ local function pretty_timescale(time)
    return math.ceil(time / divisor) .. " " .. unit
 end
 
+---- Provides a descriptive message about reinforcement warm-up info.
+-- @param reinf_def the reinforcement's definition
+-- @param[opt] reinf an instance of a reinforcement
+-- @param[opt] pos the position of the supplied 'reinf'
+-- @return information string
+function ct.warmup_desc(reinf_def, reinf, pos)
+   if reinf_def.warmup_time > 1 then
+      if reinf then
+         local elapsed = ct.get_current_reinforcement_warmup(pos, reinf)
+         local elapsed_pct = math.floor(
+            math.min(1, elapsed / reinf_def.warmup_time) * 100
+         )
+         return "It has warm-up time of "
+            .. pretty_timescale(reinf_def.warmup_time)
+            .. " (" .. tostring(elapsed_pct) .. "% warmed-up)."
+      else
+         return "It has a warm-up time of "
+            .. pretty_timescale(reinf_def.warmup_time) .. "."
+      end
+   end
+   return "It warms up instantly."
+end
+
 function ct.warmup_and_decay_info(material, reinf, pos)
    local reinf_def = ct.reinforcement_types[material]
 
    local info = {}
 
-   if reinf_def.warmup_time ~= 0 then
-      if reinf then
-         local elapsed = ct.get_current_reinforcement_warmup(pos, reinf)
-         local elapsed_pct
-            = math.floor(math.min(1, elapsed / reinf_def.warmup_time) * 100)
-
-         info[#info + 1] = "It has a warm-up time of "
-            .. pretty_timescale(reinf_def.warmup_time)
-            .. " (" .. tostring(elapsed_pct) .. "% warmed-up)."
-      else
-         info[#info + 1] = "It has a warm-up time of "
-            .. pretty_timescale(reinf_def.warmup_time) .. "."
-      end
-   end
+   local warmup_desc = ct.warmup_desc(reinf_def, reinf, pos)
+   info[#info + 1] = warmup_desc
 
    if reinf_def.value_limit > reinf_def.value then
       info[#info + 1] = "It can stack "
