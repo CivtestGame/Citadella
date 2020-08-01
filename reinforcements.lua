@@ -108,7 +108,7 @@ local function weeks(n)   return days(7)     * n end
 ct.register_reinforcement_type({
       item_name = "default:copper_ingot",
       value = 250,
-      -- disabled = true,
+      disabled = true,
 
       decay_to_value = 25,
       decay_after_time = days(30),
@@ -118,7 +118,7 @@ ct.register_reinforcement_type({
 ct.register_reinforcement_type({
       item_name = "default:tin_ingot",
       value = 250,
-      -- disabled = true,
+      disabled = true,
 
       decay_to_value = 25,
       decay_after_time = days(30),
@@ -128,7 +128,7 @@ ct.register_reinforcement_type({
 ct.register_reinforcement_type({
       item_name = "default:steel_ingot",
       value = 1800,
-      -- disabled = true,
+      disabled = true,
 
       decay_to_value = 250,
       decay_after_time = days(60),
