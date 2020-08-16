@@ -66,10 +66,12 @@ function ct.try_catchup_reinforcement(pos, reinf)
 
    elseif reinf_value < reinf_def.value then
       -- Here the reinf is warming up, or has warmed up. We calculate the
-      -- warmup interval based on warmup time (which is always non-zero here).
-      if elapsed_from_creation < warmup_time
-         or elapsed_from_last_update < warmup_time
-      then
+      -- warmup interval based on warmup time.
+
+      local elapsed_before_update
+         = elapsed_from_creation - elapsed_from_last_update
+
+      if elapsed_before_update < warmup_time then
          local warmup_val = compute_decay(
             time, last_update, warmup_time / reinf_def.value
          )
