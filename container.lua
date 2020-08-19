@@ -19,10 +19,11 @@ function ct.make_open_formspec(reinf, group, name, pos)
       -- default.gui_slots ,
       "list[nodemeta:"..spos..";main;0,0.7;8,4;]",
       -- invisible tmp invlist to facilitate shift-clicking to player inv
-      "list[nodemeta:"..spos..";tmp;0,0;0,0;]",
-      "listring[]",
+      -- "list[nodemeta:"..spos..";tmp;0,0;0,0;]",
+      -- "listring[]",
       sfinv.get_inventory_area_formspec(5.2),
       "listring[nodemeta:"..spos..";main]",
+      "listring[current_player;router]",
       "listring[current_player;main2]",
       "listring[nodemeta:"..spos..";main]",
       "listring[current_player;main]",
@@ -118,29 +119,6 @@ function ct.override_on_metadata_inventory_move(def)
    local old_on_metadata_inventory_move = def.on_metadata_inventory_move
    def.on_metadata_inventory_move =
       function(pos, from_list, from_index, to_list, to_index, count, player)
-         if from_list == "main" and to_list == "tmp" then
-            local inv = minetest.get_meta(pos):get_inventory()
-            local stack = inv:get_stack("tmp", to_index)
-            local stack_count = stack:take_item(count)
-
-            local leftover = player_api.give_item(player, stack_count, true)
-            local leftover_count = (leftover and leftover:get_count()) or 0
-
-            local from = inv:get_stack("main", from_index, stack)
-            local from_count = from:get_count()
-
-            from:set_count(math.max(0, from_count + leftover_count))
-
-            inv:set_stack("main", from_index, from)
-
-            -- XXX: I feel bad about this, just in case there are bugs that
-            -- cause "tmp" to remain non-empty (and valid items get nuked).
-            --
-            -- But, for now, I think I would prefer to receive complaints than
-            -- spew the items out into the world. That way, the players report
-            -- the bugs, instead of getting used to 'weird' behaviour.
-            inv:set_list("tmp", {})
-         end
          minetest.log("verbose",
             player:get_player_name() .. " moves stuff in locked chest at "
                .. minetest.pos_to_string(pos)

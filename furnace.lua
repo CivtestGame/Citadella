@@ -14,6 +14,26 @@ end
 -- Formspecs
 --
 
+local furnace_listrings =
+   -- Everything from the furnace goes to the router
+   "listring[context;dst]"..
+   "listring[current_player;router]"..
+   "listring[context;src]"..
+   "listring[current_player;router]"..
+   "listring[context;fuel]"..
+   "listring[current_player;router]"..
+
+   -- Everything from the player goes to some furnace inventory
+   "listring[current_player;main2]"..
+   "listring[context;fuel]"..
+   "listring[current_player;main]"..
+   "listring[context;fuel]"..
+
+   "listring[current_player;main2]"..
+   "listring[context;src]"..
+   "listring[current_player;main]"..
+   "listring[context;src]"
+
 local function get_furnace_active_formspec(fuel_percent, item_percent)
 	return "size[8,8.5]"..
 		"list[context;src;2.75,0.5;1,1;]"..
@@ -24,18 +44,7 @@ local function get_furnace_active_formspec(fuel_percent, item_percent)
 		(item_percent)..":gui_furnace_arrow_fg.png^[transformR270]"..
 		"list[context;dst;4.75,0.96;2,2;]"..
 		sfinv.get_inventory_area_formspec(4.25)..
-		"listring[context;dst]"..
-		"listring[current_player;main2]"..
-		"listring[context;src]"..
-		"listring[current_player;main2]"..
-		"listring[context;fuel]"..
-		"listring[current_player;main2]"..
-		"listring[context;dst]"..
-		"listring[current_player;main]"..
-		"listring[context;src]"..
-		"listring[current_player;main]"..
-		"listring[context;fuel]"..
-		"listring[current_player;main]"..
+		furnace_listrings..
 		default.get_hotbar_bg(0, 4.25)
 end
 
@@ -47,18 +56,7 @@ local function get_furnace_inactive_formspec()
 		"image[3.75,1.5;1,1;gui_furnace_arrow_bg.png^[transformR270]"..
 		"list[context;dst;4.75,0.96;2,2;]"..
 		sfinv.get_inventory_area_formspec(4.25)..
-		"listring[context;dst]"..
-		"listring[current_player;main2]"..
-		"listring[context;src]"..
-		"listring[current_player;main2]"..
-		"listring[context;fuel]"..
-		"listring[current_player;main2]"..
-		"listring[context;dst]"..
-		"listring[current_player;main]"..
-		"listring[context;src]"..
-		"listring[current_player;main]"..
-		"listring[context;fuel]"..
-		"listring[current_player;main]"..
+		furnace_listrings..
 		default.get_hotbar_bg(0, 4.25)
 end
 
